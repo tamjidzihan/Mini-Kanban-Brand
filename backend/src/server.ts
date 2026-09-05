@@ -1,10 +1,14 @@
 import express from 'express';
 import cors from 'cors';
+import morgan from 'morgan';
 import { ENV } from './config/env.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 
 const app = express();
+
+// Log all incoming HTTP traffic
+app.use(morgan('dev'));
 
 app.use(cors({
   origin: ENV.CORS_ORIGIN,
