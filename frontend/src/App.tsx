@@ -8,6 +8,7 @@ import { LoginPage } from './pages/LoginPage';
 import { RegisterPage } from './pages/RegisterPage';
 import { DashboardPage } from './pages/DashboardPage';
 import { BoardDetailPage } from './pages/BoardDetailPage';
+import { ProfilePage } from './pages/ProfilePage';
 import { NotFoundPage } from './pages/NotFoundPage';
 
 const queryClient = new QueryClient({
@@ -34,6 +35,7 @@ export const App: React.FC = () => {
               <Route element={<ProtectedRoute />}>
                 <Route path="/" element={<DashboardPage />} />
                 <Route path="/board/:boardId" element={<BoardDetailPage />} />
+                <Route path="/profile" element={<ProfilePage />} />
               </Route>
 
               {/* 404 Route */}

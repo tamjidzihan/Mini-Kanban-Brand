@@ -34,12 +34,16 @@ export const Navbar: React.FC = () => {
         {/* User Info & Logout */}
         {user && (
           <div className="flex items-center gap-3 border-l border-slate-200 dark:border-slate-800 pl-3 sm:pl-4">
-            <div className="flex items-center gap-2">
+            <Link
+              to="/profile"
+              className="flex items-center gap-2 hover:opacity-80 transition-opacity"
+              title="View Profile"
+            >
               <Avatar name={user.name} src={user.avatarUrl} size="sm" />
               <span className="hidden sm:inline-block text-sm font-medium text-slate-700 dark:text-slate-300">
                 {user.name}
               </span>
-            </div>
+            </Link>
             <Button
               variant="ghost"
               size="sm"

@@ -1,6 +1,6 @@
 import React from 'react';
 import { NavLink } from 'react-router-dom';
-import { LayoutDashboard, Plus, Kanban } from 'lucide-react';
+import { LayoutDashboard, User, Plus, Kanban } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Board } from '../../types';
 
@@ -33,6 +33,20 @@ export const Sidebar: React.FC<SidebarProps> = ({
           >
             <LayoutDashboard className="w-4 h-4" />
             Dashboard
+          </NavLink>
+          <NavLink
+            to="/profile"
+            className={({ isActive }: { isActive: boolean }) =>
+              cn(
+                'flex items-center gap-3 px-3 py-2 text-sm font-medium rounded-lg transition-colors',
+                isActive
+                  ? 'bg-indigo-50 dark:bg-indigo-950/60 text-indigo-600 dark:text-indigo-400 font-semibold'
+                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100 dark:hover:bg-slate-800 hover:text-slate-900 dark:hover:text-slate-100'
+              )
+            }
+          >
+            <User className="w-4 h-4" />
+            Profile Settings
           </NavLink>
         </nav>
 

@@ -9,6 +9,8 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (name: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  setUser: React.Dispatch<React.SetStateAction<User | null>>;
+  refreshUser: () => Promise<void>;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -18,24 +20,24 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   const [token, setToken] = useState<string | null>(() => localStorage.getItem('kanban_token'));
   const [isLoading, setIsLoading] = useState<boolean>(true);
 
-  useEffect(() => {
-    const fetchMe = async () => {
-      if (!token) {
-        setIsLoading(false);
-        return;
-      }
-      try {
-        const res = await api.get('/auth/me');
-        setUser(res.data.user);
-      } catch (err) {
-        localStorage.removeItem('kanban_token');
-        setToken(null);
-        setUser(null);
-      } finally {
-        setIsLoading(false);
-      }
-    };
+  const fetchMe = async () => {
+    if (!token) {
+      setIsLoading(false);
+      return;
+    }
+    try {
+      const res = await api.get('/auth/me');
+      setUser(res.data.user);
+    } catch (err) {
+      localStorage.removeItem('kanban_token');
+      setToken(null);
+      setUser(null);
+    } finally {
+      setIsLoading(false);
+    }
+  };
 
+  useEffect(() => {
     fetchMe();
   }, [token]);
 
@@ -62,7 +64,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   };
 
   return (
-    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, token, isLoading, login, register, logout, setUser, refreshUser: fetchMe }}>
       {children}
     </AuthContext.Provider>
   );

@@ -65,3 +65,13 @@ export const moveTaskSchema = z.object({
   targetColumnId: z.string().uuid('Invalid target column ID'),
   targetPosition: z.number().min(0, 'Position must be 0 or greater'),
 });
+
+export const updateProfileSchema = z.object({
+  name: z.string().min(2, 'Name must be at least 2 characters').optional(),
+  avatarUrl: z.string().nullable().optional(),
+});
+
+export const changePasswordSchema = z.object({
+  currentPassword: z.string().min(1, 'Current password is required'),
+  newPassword: z.string().min(6, 'New password must be at least 6 characters'),
+});
