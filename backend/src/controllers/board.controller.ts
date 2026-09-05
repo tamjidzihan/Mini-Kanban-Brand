@@ -14,7 +14,7 @@ export const getBoards = async (req: Request, res: Response, next: NextFunction)
       where: {
         OR: [
           { ownerId: userId },
-          { members: { some: { userId } } },
+          { members: { some: { userId, status: 'ACCEPTED' } } },
         ],
       },
       include: {
@@ -22,6 +22,7 @@ export const getBoards = async (req: Request, res: Response, next: NextFunction)
           select: { id: true, name: true, email: true, avatarUrl: true },
         },
         members: {
+          where: { status: 'ACCEPTED' },
           include: {
             user: { select: { id: true, name: true, email: true, avatarUrl: true } },
           },
@@ -59,6 +60,7 @@ export const createBoard = async (req: Request, res: Response, next: NextFunctio
             create: {
               userId,
               role: 'OWNER',
+              status: 'ACCEPTED',
             },
           },
         },
@@ -135,7 +137,7 @@ export const getBoardById = async (req: Request, res: Response, next: NextFuncti
       if (board.ownerId === userId) {
         userRole = 'OWNER';
       } else {
-        const member = board.members.find((m: { userId: string; role: any }) => m.userId === userId);
+        const member = board.members.find((m: { userId: string; role: any; status: string }) => m.userId === userId && m.status === 'ACCEPTED');
         userRole = member?.role;
       }
     }

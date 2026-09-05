@@ -70,7 +70,7 @@ export const requireBoardRole = (allowedRoles: Role[]) => {
             },
           },
         });
-        if (member) {
+        if (member && member.status === 'ACCEPTED') {
           userRole = member.role;
         }
       }

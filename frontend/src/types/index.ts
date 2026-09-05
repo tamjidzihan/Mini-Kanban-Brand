@@ -2,12 +2,29 @@ export type Role = 'OWNER' | 'EDITOR' | 'VIEWER';
 
 export type Priority = 'LOW' | 'MEDIUM' | 'HIGH' | 'URGENT';
 
+export type InvitationStatus = 'PENDING' | 'ACCEPTED' | 'DECLINED';
+
 export interface User {
   id: string;
   name: string;
   email: string;
   avatarUrl?: string | null;
   createdAt?: string;
+}
+
+export interface BoardInvitation {
+  id: string;
+  boardId: string;
+  userId: string;
+  role: Role;
+  status: InvitationStatus;
+  createdAt: string;
+  board: {
+    id: string;
+    title: string;
+    description?: string | null;
+    owner: User;
+  };
 }
 
 export interface BoardMember {

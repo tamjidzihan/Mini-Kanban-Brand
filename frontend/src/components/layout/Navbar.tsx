@@ -3,6 +3,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useTheme } from '../../context/ThemeContext';
 import { Avatar } from '../ui/Avatar';
 import { Button } from '../ui/Button';
+import { NotificationBell } from '../notifications/NotificationBell';
 import { Sun, Moon, LogOut, Kanban } from 'lucide-react';
 import { Link } from 'react-router-dom';
 
@@ -21,7 +22,10 @@ export const Navbar: React.FC = () => {
         </Link>
       </div>
 
-      <div className="flex items-center gap-3 sm:gap-4">
+      <div className="flex items-center gap-2 sm:gap-3">
+        {/* Notification Bell */}
+        {user && <NotificationBell />}
+
         {/* Theme Toggle */}
         <button
           onClick={toggleTheme}

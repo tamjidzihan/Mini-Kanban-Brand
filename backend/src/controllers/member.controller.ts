@@ -7,14 +7,22 @@ export const getMembers = async (req: Request, res: Response, next: NextFunction
     const boardId = req.params.boardId as string;
 
     const members = await prisma.boardMember.findMany({
-      where: { boardId },
+      where: { boardId, status: 'ACCEPTED' },
       include: {
         user: { select: { id: true, name: true, email: true, avatarUrl: true } },
       },
       orderBy: { createdAt: 'asc' },
     });
 
-    res.json({ members });
+    const pendingInvitations = await prisma.boardMember.findMany({
+      where: { boardId, status: 'PENDING' },
+      include: {
+        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
+      },
+      orderBy: { createdAt: 'asc' },
+    });
+
+    res.json({ members, pendingInvitations });
   } catch (error) {
     next(error);
   }
@@ -36,7 +44,7 @@ export const addMember = async (req: Request, res: Response, next: NextFunction)
 
     const board = await prisma.board.findUnique({
       where: { id: boardId },
-      select: { ownerId: true },
+      select: { ownerId: true, title: true },
     });
 
     if (board?.ownerId === targetUser.id) {
@@ -54,22 +62,31 @@ export const addMember = async (req: Request, res: Response, next: NextFunction)
     });
 
     if (existingMember) {
-      res.status(409).json({ message: 'User is already a member of this board' });
-      return;
+      if (existingMember.status === 'ACCEPTED') {
+        res.status(409).json({ message: 'User is already an active member of this board' });
+        return;
+      } else if (existingMember.status === 'PENDING') {
+        res.status(409).json({ message: 'An invitation is already pending for this user' });
+        return;
+      }
     }
 
-    const member = await prisma.boardMember.create({
+    const invitation = await prisma.boardMember.create({
       data: {
         boardId,
         userId: targetUser.id,
         role: data.role,
+        status: 'PENDING',
       },
       include: {
         user: { select: { id: true, name: true, email: true, avatarUrl: true } },
       },
     });
 
-    res.status(201).json({ member });
+    res.status(201).json({
+      member: invitation,
+      message: `Invitation sent successfully to ${targetUser.email}`,
+    });
   } catch (error) {
     next(error);
   }

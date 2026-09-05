@@ -81,8 +81,8 @@ export const BoardDetailPage: React.FC = () => {
       <TaskModal isOpen={isTaskOpen} onClose={() => setIsTaskOpen(false)} onSubmit={async (d) => { editingTask ? await api.patch(`/tasks/${editingTask.id}`, d) : await api.post('/tasks', { ...d, boardId }); fetchBoardData(); }} columns={columns} members={usersInBoard} task={editingTask} defaultColumnId={targetColId} />
       <ColumnModal isOpen={isColOpen} onClose={() => setIsColOpen(false)} onSubmit={async (title) => { editingCol ? await api.patch(`/columns/${editingCol.id}`, { title }) : await api.post('/columns', { title, boardId }); fetchBoardData(); }} column={editingCol} />
       <BoardModal isOpen={isBoardOpen} onClose={() => setIsBoardOpen(false)} onSubmit={async (t, desc) => { await api.patch(`/boards/${boardId}`, { title: t, description: desc }); fetchBoardData(); }} board={board} />
-      <ShareBoardModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} members={board.members || []} owner={board.owner} currentUserRole={currentRole}
-        onAddMember={async (email, role) => { await api.post(`/boards/${boardId}/members`, { email, role }); fetchBoardData(); }}
+      <ShareBoardModal isOpen={isShareOpen} onClose={() => setIsShareOpen(false)} members={board.members || []} owner={board.owner} boardId={boardId} currentUserRole={currentRole}
+        onAddMember={async (email, role) => { const res = await api.post(`/boards/${boardId}/members`, { email, role }); fetchBoardData(); return res; }}
         onUpdateRole={async (id, role) => { await api.patch(`/boards/${boardId}/members/${id}`, { role }); fetchBoardData(); }}
         onRemoveMember={async (id) => { await api.delete(`/boards/${boardId}/members/${id}`); fetchBoardData(); }}
       />
