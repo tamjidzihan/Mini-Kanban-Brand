@@ -66,7 +66,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
           Members
         </Button>
 
-        {canEdit && (
+        {currentRole === 'OWNER' && (
           <Button size="sm" onClick={onOpenAddColumn} leftIcon={<Plus className="w-4 h-4" />}>
             Add Column
           </Button>

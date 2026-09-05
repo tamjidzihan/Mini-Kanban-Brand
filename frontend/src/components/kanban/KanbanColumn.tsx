@@ -27,7 +27,8 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
   onDeleteColumn,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
-  const canEdit = userRole === 'OWNER' || userRole === 'EDITOR';
+  const canManageTasks = userRole === 'OWNER' || userRole === 'EDITOR';
+  const canManageColumns = userRole === 'OWNER';
 
   const { setNodeRef, isOver } = useDroppable({
     id: column.id,
@@ -55,7 +56,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
         </div>
 
         <div className="flex items-center gap-1">
-          {canEdit && (
+          {canManageTasks && (
             <button
               onClick={() => onAddTask(column.id)}
               className="p-1 rounded-lg text-slate-400 hover:text-indigo-600 hover:bg-slate-200 dark:hover:bg-slate-800 transition-colors"
@@ -65,7 +66,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
             </button>
           )}
 
-          {canEdit && (
+          {canManageColumns && (
             <div className="relative">
               <button
                 onClick={() => setShowMenu(!showMenu)}
@@ -126,7 +127,7 @@ export const KanbanColumn: React.FC<KanbanColumnProps> = ({
       </div>
 
       {/* Column Footer */}
-      {canEdit && (
+      {canManageTasks && (
         <div className="p-2 border-t border-slate-200/60 dark:border-slate-800/60">
           <Button
             variant="ghost"
