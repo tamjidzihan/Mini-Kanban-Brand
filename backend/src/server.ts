@@ -1,0 +1,33 @@
+import express from 'express';
+import cors from 'cors';
+import { ENV } from './config/env.js';
+import routes from './routes/index.js';
+import { errorHandler } from './middlewares/error.middleware.js';
+
+const app = express();
+
+app.use(cors({
+  origin: ENV.CORS_ORIGIN,
+  credentials: true,
+}));
+
+app.use(express.json());
+
+// API Health Check
+app.get('/api/health', (req, res) => {
+  res.json({ status: 'ok', timestamp: new Date().toISOString() });
+});
+
+// App API routes
+app.use('/api', routes);
+
+// Centralized error handler
+app.use(errorHandler);
+
+const PORT = parseInt(ENV.PORT, 10) || 5000;
+
+app.listen(PORT, () => {
+  console.log(`🚀 Mini Kanban API Server running on port ${PORT}`);
+});
+
+export default app;
