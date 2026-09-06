@@ -50,9 +50,20 @@ export const updateColumn = async (req: Request, res: Response, next: NextFuncti
 export const deleteColumn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const columnId = req.params.columnId as string;
+    const targetColumnId = (req.body?.targetColumnId || req.query?.targetColumnId) as string | undefined;
 
-    await prisma.column.delete({
-      where: { id: columnId },
+    await prisma.$transaction(async (tx) => {
+      if (targetColumnId && targetColumnId !== columnId) {
+        // Move existing tasks to targetColumnId
+        await tx.task.updateMany({
+          where: { columnId },
+          data: { columnId: targetColumnId },
+        });
+      }
+
+      await tx.column.delete({
+        where: { id: columnId },
+      });
     });
 
     res.json({ message: 'Column deleted successfully' });

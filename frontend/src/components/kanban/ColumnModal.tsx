@@ -3,8 +3,9 @@ import { Modal } from '../ui/Modal';
 import { Input } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Column } from '../../types';
+import { AlertCircle } from 'lucide-react';
 
-interface ColumnModalProps {
+export interface ColumnModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (title: string) => Promise<void>;
@@ -49,26 +50,42 @@ export const ColumnModal: React.FC<ColumnModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={column ? 'Rename Column' : 'Create New Column'}
-      maxWidth="sm"
+      title={column ? 'Rename Column' : 'Add New Column'}
+      description={column ? 'Change the column status name.' : 'Add a new workflow stage to this board.'}
+      size="sm"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-rose-50 text-rose-600 dark:bg-rose-950/60 text-xs rounded-lg font-medium">
-            {error}
+          <div className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border border-rose-500/20 text-xs rounded-xl flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
+
         <Input
           label="Column Title *"
-          placeholder="e.g. In Review"
+          placeholder="e.g. In Review / QA"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+
+        <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button type="submit" isLoading={isLoading}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            isLoading={isLoading}
+          >
             {column ? 'Save Changes' : 'Create Column'}
           </Button>
         </div>

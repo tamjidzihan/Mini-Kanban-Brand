@@ -3,12 +3,27 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    color-scheme: light dark;
+  }
+
   body {
-    @apply min-h-screen bg-slate-50 text-slate-900 dark:bg-slate-950 dark:text-slate-100;
+    @apply min-h-screen bg-gray-50 text-slate-900 dark:bg-gray-950 dark:text-slate-100 antialiased;
+    text-rendering: optimizeLegibility;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+
+  .dark {
+    color-scheme: dark;
+  }
+
+  ::selection {
+    @apply bg-emerald-500/25 text-emerald-950 dark:text-emerald-100;
   }
 }
 
-/* Custom Scrollbars */
+/* Custom Scrollbars per design_react.md §10 */
 ::-webkit-scrollbar {
   width: 6px;
   height: 6px;
@@ -19,9 +34,5 @@
 }
 
 ::-webkit-scrollbar-thumb {
-  @apply bg-slate-300 dark:bg-slate-700 rounded-full;
-}
-
-::-webkit-scrollbar-thumb:hover {
-  @apply bg-slate-400 dark:bg-slate-600;
+  @apply bg-slate-300/80 dark:bg-slate-700/80 rounded-full hover:bg-slate-400 dark:hover:bg-slate-600 transition-colors;
 }

@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
-import { Kanban } from 'lucide-react';
+import { Card } from '../components/ui/Card';
+import { Kanban, AlertCircle, Sparkles } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
@@ -44,69 +45,86 @@ export const RegisterPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-slate-50 dark:bg-slate-950">
-      <div className="w-full max-w-md bg-white dark:bg-slate-900 border border-slate-200 dark:border-slate-800 rounded-2xl shadow-elevated p-8 space-y-6">
-        <div className="text-center space-y-2">
-          <div className="inline-flex p-3 rounded-xl bg-indigo-600 text-white shadow-md">
-            <Kanban className="w-8 h-8" />
+    <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-50 dark:bg-gray-950">
+      <div className="w-full max-w-md space-y-4">
+        <Card className="p-8 space-y-6 shadow-dropdown">
+          <div className="text-center space-y-2">
+            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-soft">
+              <Kanban className="w-7 h-7" />
+            </div>
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center justify-center gap-1.5">
+              <span>Create your Account</span>
+              <Sparkles className="w-4 h-4 text-emerald-500 fill-emerald-500" />
+            </h1>
+            <p className="text-xs text-slate-500 dark:text-slate-400">
+              Start creating boards and collaborating with your team
+            </p>
           </div>
-          <h1 className="text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
-            Create an account
-          </h1>
-          <p className="text-sm text-slate-500 dark:text-slate-400">
-            Start collaborating with your team today
+
+          {error && (
+            <div className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 text-xs font-medium rounded-xl border border-rose-500/20 flex items-center gap-2">
+              <AlertCircle className="w-4 h-4 shrink-0" />
+              <span>{error}</span>
+            </div>
+          )}
+
+          <form onSubmit={handleSubmit} className="space-y-4">
+            <Input
+              label="Full Name"
+              placeholder="e.g. Alex Morgan"
+              value={name}
+              onChange={(e) => setName(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Email address"
+              type="email"
+              placeholder="you@example.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Password"
+              type="password"
+              placeholder="•••••••• (min 6 characters)"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              required
+            />
+
+            <Input
+              label="Confirm Password"
+              type="password"
+              placeholder="••••••••"
+              value={confirmPassword}
+              onChange={(e) => setConfirmPassword(e.target.value)}
+              required
+            />
+
+            <Button
+              type="submit"
+              variant="primary"
+              size="md"
+              isLoading={isLoading}
+              className="w-full mt-2"
+            >
+              Create Free Account
+            </Button>
+          </form>
+
+          <p className="text-center text-xs text-slate-500 dark:text-slate-400">
+            Already have an account?{' '}
+            <Link
+              to="/login"
+              className="font-semibold text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              Sign In
+            </Link>
           </p>
-        </div>
-
-        {error && (
-          <div className="p-3 bg-rose-50 text-rose-600 dark:bg-rose-950/60 dark:text-rose-400 text-xs font-medium rounded-lg">
-            {error}
-          </div>
-        )}
-
-        <form onSubmit={handleSubmit} className="space-y-4">
-          <Input
-            label="Full Name"
-            placeholder="John Doe"
-            value={name}
-            onChange={(e) => setName(e.target.value)}
-          />
-
-          <Input
-            label="Email address"
-            type="email"
-            placeholder="you@example.com"
-            value={email}
-            onChange={(e) => setEmail(e.target.value)}
-          />
-
-          <Input
-            label="Password"
-            type="password"
-            placeholder="••••••••"
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-          />
-
-          <Input
-            label="Confirm Password"
-            type="password"
-            placeholder="••••••••"
-            value={confirmPassword}
-            onChange={(e) => setConfirmPassword(e.target.value)}
-          />
-
-          <Button type="submit" isLoading={isLoading} className="w-full mt-2">
-            Create Account
-          </Button>
-        </form>
-
-        <p className="text-center text-xs text-slate-500 dark:text-slate-400">
-          Already have an account?{' '}
-          <Link to="/login" className="font-semibold text-indigo-600 dark:text-indigo-400 hover:underline">
-            Sign In
-          </Link>
-        </p>
+        </Card>
       </div>
     </div>
   );

@@ -188,3 +188,72 @@ export const deleteBoard = async (req: Request, res: Response, next: NextFunctio
     next(error);
   }
 };
+
+export const searchWorkspace = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const userId = req.user?.id;
+    const q = (req.query.q as string || '').trim();
+
+    if (!userId) {
+      res.status(401).json({ message: 'Unauthorized' });
+      return;
+    }
+
+    if (!q) {
+      res.json({ boards: [], tasks: [] });
+      return;
+    }
+
+    // Accessible board IDs
+    const accessibleBoards = await prisma.board.findMany({
+      where: {
+        OR: [
+          { ownerId: userId },
+          { members: { some: { userId, status: 'ACCEPTED' } } },
+        ],
+      },
+      select: { id: true },
+    });
+
+    const boardIds = accessibleBoards.map((b) => b.id);
+
+    // Search boards
+    const boards = await prisma.board.findMany({
+      where: {
+        id: { in: boardIds },
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      select: {
+        id: true,
+        title: true,
+        description: true,
+        updatedAt: true,
+      },
+      take: 10,
+    });
+
+    // Search tasks
+    const tasks = await prisma.task.findMany({
+      where: {
+        boardId: { in: boardIds },
+        OR: [
+          { title: { contains: q, mode: 'insensitive' } },
+          { description: { contains: q, mode: 'insensitive' } },
+        ],
+      },
+      include: {
+        column: { select: { id: true, title: true } },
+        board: { select: { id: true, title: true } },
+        assignedTo: { select: { id: true, name: true, avatarUrl: true } },
+      },
+      take: 15,
+    });
+
+    res.json({ boards, tasks });
+  } catch (error) {
+    next(error);
+  }
+};

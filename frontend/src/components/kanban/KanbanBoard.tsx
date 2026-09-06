@@ -16,8 +16,9 @@ import { Column, Task, Role } from '../../types';
 import { KanbanColumn } from './KanbanColumn';
 import { TaskCard } from './TaskCard';
 import { api } from '../../lib/api';
+import { useToast } from '../../context/ToastContext';
 
-interface KanbanBoardProps {
+export interface KanbanBoardProps {
   columns: Column[];
   userRole: Role;
   setColumns: React.Dispatch<React.SetStateAction<Column[]>>;
@@ -25,7 +26,7 @@ interface KanbanBoardProps {
   onEditTask: (task: Task) => void;
   onDeleteTask: (taskId: string) => void;
   onEditColumn: (column: Column) => void;
-  onDeleteColumn: (columnId: string) => void;
+  onDeleteColumn: (columnId: string, targetColumnId?: string) => void;
 }
 
 export const KanbanBoard: React.FC<KanbanBoardProps> = ({
@@ -39,6 +40,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   onDeleteColumn,
 }) => {
   const [activeTask, setActiveTask] = useState<Task | null>(null);
+  const [snapshotColumns, setSnapshotColumns] = useState<Column[]>([]);
+  const toast = useToast();
 
   const sensors = useSensors(
     useSensor(PointerSensor, {
@@ -56,6 +59,8 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
   const handleDragStart = (event: DragStartEvent) => {
     const { active } = event;
     const taskId = active.id as string;
+    setSnapshotColumns(columns); // save snapshot for optimistic rollback
+
     const col = findColumnOfTask(taskId);
     if (col) {
       const task = col.tasks.find((t) => t.id === taskId);
@@ -73,7 +78,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const activeCol = findColumnOfTask(activeId);
     let overCol = findColumnOfTask(overId);
 
-    // If over container directly
+    // If hovering directly over column drop area
     if (!overCol) {
       overCol = columns.find((c) => c.id === overId);
     }
@@ -84,16 +89,17 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       const sourceColIndex = prevCols.findIndex((c) => c.id === activeCol.id);
       const destColIndex = prevCols.findIndex((c) => c.id === overCol.id);
 
+      if (sourceColIndex === -1 || destColIndex === -1) return prevCols;
+
       const sourceTasks = [...prevCols[sourceColIndex].tasks];
       const destTasks = [...prevCols[destColIndex].tasks];
 
       const activeTaskIndex = sourceTasks.findIndex((t) => t.id === activeId);
-      const [movedTask] = sourceTasks.splice(activeTaskIndex, 1);
+      if (activeTaskIndex === -1) return prevCols;
 
-      // Change columnId of moved task
+      const [movedTask] = sourceTasks.splice(activeTaskIndex, 1);
       const updatedTask = { ...movedTask, columnId: overCol.id };
 
-      // Find insertion position
       const overTaskIndex = destTasks.findIndex((t) => t.id === overId);
       const insertIndex = overTaskIndex >= 0 ? overTaskIndex : destTasks.length;
       destTasks.splice(insertIndex, 0, updatedTask);
@@ -117,7 +123,6 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
     const destCol = findColumnOfTask(activeId) || columns.find((c) => c.id === overId);
     if (!destCol) return;
 
-    // Get final ordered task IDs in destination column
     const taskIdsOrder = destCol.tasks.map((t) => t.id);
 
     try {
@@ -127,6 +132,11 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       });
     } catch (error) {
       console.error('Failed to persist task position:', error);
+      // Rollback to snapshot state
+      if (snapshotColumns.length > 0) {
+        setColumns(snapshotColumns);
+      }
+      toast.error('Failed to move task. Reverted position.');
     }
   };
 
@@ -138,11 +148,12 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
       onDragOver={handleDragOver}
       onDragEnd={handleDragEnd}
     >
-      <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-13rem)] items-start">
+      <div className="flex gap-4 overflow-x-auto pb-4 h-[calc(100vh-14.5rem)] items-start">
         {columns.map((column) => (
           <KanbanColumn
             key={column.id}
             column={column}
+            allColumns={columns}
             userRole={userRole}
             onAddTask={onAddTask}
             onEditTask={onEditTask}
@@ -155,7 +166,7 @@ export const KanbanBoard: React.FC<KanbanBoardProps> = ({
 
       <DragOverlay>
         {activeTask ? (
-          <div className="w-80 rotate-2 cursor-grabbing shadow-2xl opacity-90">
+          <div className="w-80 rotate-2 cursor-grabbing shadow-2xl opacity-95">
             <TaskCard
               task={activeTask}
               userRole={userRole}

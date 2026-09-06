@@ -215,3 +215,37 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
     next(error);
   }
 };
+
+export const searchUsers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  try {
+    const q = (req.query.q as string || '').trim().toLowerCase();
+    const currentUserId = req.user?.id;
+
+    const users = await prisma.user.findMany({
+      where: {
+        AND: [
+          currentUserId ? { id: { not: currentUserId } } : {},
+          q
+            ? {
+                OR: [
+                  { email: { contains: q, mode: 'insensitive' } },
+                  { name: { contains: q, mode: 'insensitive' } },
+                ],
+              }
+            : {},
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        avatarUrl: true,
+      },
+      take: 20,
+    });
+
+    res.json({ users });
+  } catch (error) {
+    next(error);
+  }
+};

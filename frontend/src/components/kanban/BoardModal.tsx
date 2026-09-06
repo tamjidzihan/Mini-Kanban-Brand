@@ -1,10 +1,11 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from '../ui/Modal';
-import { Input } from '../ui/Input';
+import { Input, Textarea } from '../ui/Input';
 import { Button } from '../ui/Button';
 import { Board } from '../../types';
+import { AlertCircle } from 'lucide-react';
 
-interface BoardModalProps {
+export interface BoardModalProps {
   isOpen: boolean;
   onClose: () => void;
   onSubmit: (title: string, description?: string) => Promise<void>;
@@ -52,38 +53,50 @@ export const BoardModal: React.FC<BoardModalProps> = ({
     <Modal
       isOpen={isOpen}
       onClose={onClose}
-      title={board ? 'Edit Board Settings' : 'Create New Board'}
-      maxWidth="md"
+      title={board ? 'Edit Board Details' : 'Create New Board'}
+      description={board ? 'Update workspace title and purpose.' : 'Create a collaborative workspace for your team.'}
+      size="md"
     >
       <form onSubmit={handleSubmit} className="space-y-4">
         {error && (
-          <div className="p-3 bg-rose-50 text-rose-600 dark:bg-rose-950/60 text-xs rounded-lg font-medium">
-            {error}
+          <div className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border border-rose-500/20 text-xs rounded-xl flex items-center gap-2">
+            <AlertCircle className="w-4 h-4 shrink-0" />
+            <span>{error}</span>
           </div>
         )}
+
         <Input
           label="Board Title *"
           placeholder="e.g. Website Redesign Q3"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          required
         />
-        <div className="space-y-1.5">
-          <label className="block text-xs font-medium text-slate-700 dark:text-slate-300">
-            Description
-          </label>
-          <textarea
-            rows={3}
-            className="w-full px-3 py-2 text-sm bg-white dark:bg-slate-900 border border-slate-300 dark:border-slate-700 rounded-lg focus:outline-none focus:ring-2 focus:ring-indigo-500 text-slate-900 dark:text-slate-100"
-            placeholder="Brief overview of the project board..."
-            value={description}
-            onChange={(e) => setDescription(e.target.value)}
-          />
-        </div>
-        <div className="flex justify-end gap-3 pt-2">
-          <Button type="button" variant="outline" onClick={onClose} disabled={isLoading}>
+
+        <Textarea
+          label="Description"
+          rows={3}
+          placeholder="Brief summary of the goals and deliverables..."
+          value={description}
+          onChange={(e) => setDescription(e.target.value)}
+        />
+
+        <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100 dark:border-gray-800">
+          <Button
+            type="button"
+            variant="secondary"
+            size="sm"
+            onClick={onClose}
+            disabled={isLoading}
+          >
             Cancel
           </Button>
-          <Button type="submit" isLoading={isLoading}>
+          <Button
+            type="submit"
+            variant="primary"
+            size="sm"
+            isLoading={isLoading}
+          >
             {board ? 'Save Changes' : 'Create Board'}
           </Button>
         </div>
