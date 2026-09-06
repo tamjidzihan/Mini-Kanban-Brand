@@ -155,7 +155,6 @@ export const DashboardPage: React.FC = () => {
           <div>
             <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-2">
               <span>Welcome back, {user?.name}</span>
-              <span className="text-xl">👋</span>
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
               Organize your tasks, collaborate with your team, and track project progress.
