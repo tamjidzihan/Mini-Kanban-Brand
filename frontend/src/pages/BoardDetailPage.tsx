@@ -4,6 +4,7 @@ import { PageLayout } from '../components/layout/PageLayout';
 import { KanbanBoard } from '../components/kanban/KanbanBoard';
 import { ListView } from '../components/kanban/ListView';
 import { AnalyticsView } from '../components/kanban/AnalyticsView';
+import { CalendarView } from '../components/kanban/CalendarView';
 import { BoardHeader, ViewMode } from '../components/kanban/BoardHeader';
 import { TaskModal } from '../components/kanban/TaskModal';
 import { ColumnModal } from '../components/kanban/ColumnModal';
@@ -82,6 +83,18 @@ export const BoardDetailPage: React.FC = () => {
   useEffect(() => {
     fetchBoardData();
   }, [boardId]);
+
+  useEffect(() => {
+    const handleViewChange = (e: CustomEvent<ViewMode>) => {
+      if (e.detail) {
+        setViewMode(e.detail);
+      }
+    };
+    window.addEventListener('change-board-view' as any, handleViewChange as any);
+    return () => {
+      window.removeEventListener('change-board-view' as any, handleViewChange as any);
+    };
+  }, []);
 
   // Filter tasks within columns
   const filteredColumns = useMemo(() => {
@@ -353,6 +366,19 @@ export const BoardDetailPage: React.FC = () => {
             userRole={currentRole}
             onEditTask={handleOpenTaskDetail}
             onDeleteTask={(id) => setConfirm({ isOpen: true, type: 'task', id })}
+          />
+        )}
+
+        {viewMode === 'calendar' && (
+          <CalendarView
+            columns={filteredColumns}
+            userRole={currentRole}
+            onEditTask={handleOpenTaskDetail}
+            onAddTask={(colId) => {
+              setEditingTask(null);
+              setTargetColId(colId || columns[0]?.id || '');
+              setIsTaskOpen(true);
+            }}
           />
         )}
 

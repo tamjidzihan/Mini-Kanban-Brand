@@ -112,6 +112,9 @@ export const getBoardById = async (req: Request, res: Response, next: NextFuncti
             user: { select: { id: true, name: true, email: true, avatarUrl: true } },
           },
         },
+        tags: {
+          orderBy: { name: 'asc' },
+        },
         columns: {
           orderBy: { position: 'asc' },
           include: {
@@ -119,6 +122,8 @@ export const getBoardById = async (req: Request, res: Response, next: NextFuncti
               orderBy: { position: 'asc' },
               include: {
                 assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
+                subtasks: { orderBy: { position: 'asc' } },
+                taskTags: { include: { tag: true } },
               },
             },
           },

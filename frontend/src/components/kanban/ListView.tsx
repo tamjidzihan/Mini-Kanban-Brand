@@ -127,8 +127,36 @@ export const ListView: React.FC<ListViewProps> = ({
                   >
                     <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
                       <div className="max-w-md">
-                        <div className="font-semibold text-xs truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
-                          {t.title}
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-semibold text-xs truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                            {t.title}
+                          </span>
+                          {t.tags && t.tags.length > 0 && (
+                            <div className="flex items-center gap-1 flex-wrap">
+                              {t.tags.map((tt) => (
+                                <span
+                                  key={tt.tagId || tt.tag?.id || Math.random()}
+                                  className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full text-white"
+                                  style={{ backgroundColor: tt.tag?.color || '#3b82f6' }}
+                                >
+                                  {tt.tag?.name}
+                                </span>
+                              ))}
+                            </div>
+                          )}
+                          {t.subtasks && t.subtasks.length > 0 && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300">
+                              <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />
+                              {t.subtasks.filter((s) => s.isCompleted).length}/{t.subtasks.length}
+                            </span>
+                          )}
+                          {((t.loggedMinutes && t.loggedMinutes > 0) || (t.estimatedHours && t.estimatedHours > 0)) && (
+                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
+                              <Clock className="w-2.5 h-2.5" />
+                              {t.loggedMinutes ? `${Math.floor(t.loggedMinutes / 60)}h ${t.loggedMinutes % 60}m` : ''}
+                              {t.estimatedHours ? ` / ${t.estimatedHours}h est` : ''}
+                            </span>
+                          )}
                         </div>
                         {t.description && (
                           <div className="text-[11px] text-slate-400 truncate mt-0.5">

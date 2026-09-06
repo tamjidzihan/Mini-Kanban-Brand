@@ -1,9 +1,10 @@
-import React, { useState, useEffect, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
-import { Search, Kanban, CheckSquare, X, ArrowRight, CornerDownLeft } from 'lucide-react';
+import React, { useState, useEffect, useRef, useMemo } from 'react';
+import { useNavigate, useLocation } from 'react-router-dom';
+import { Search, Kanban, CheckSquare, X, ArrowRight, CornerDownLeft, Sparkles, Moon, Sun, LayoutGrid, Calendar, List, BarChart2, Home } from 'lucide-react';
 import { api } from '../../lib/api';
 import { cn } from '../../lib/cn';
 import { createPortal } from 'react-dom';
+import { useTheme } from '../../context/ThemeContext';
 
 interface GlobalSearchProps {
   isOpen: boolean;
@@ -12,11 +13,13 @@ interface GlobalSearchProps {
 
 interface SearchResult {
   id: string;
-  type: 'board' | 'task';
+  type: 'board' | 'task' | 'action';
   title: string;
   subtitle?: string;
   boardId?: string;
   extra?: string;
+  action?: () => void;
+  icon?: React.ReactNode;
 }
 
 export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) => {
@@ -26,11 +29,83 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
   const [isLoading, setIsLoading] = useState(false);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
+  const location = useLocation();
+  const { toggleTheme, theme } = useTheme();
+
+  // Quick Action Commands
+  const quickActions = useMemo<SearchResult[]>(() => {
+    const isBoardPage = location.pathname.startsWith('/board/');
+    const actions: SearchResult[] = [
+      {
+        id: 'action-theme',
+        type: 'action',
+        title: `Toggle Theme (Currently: ${theme})`,
+        subtitle: 'Switch between light, dark, and system color modes',
+        icon: <Moon className="w-3.5 h-3.5" />,
+        action: () => toggleTheme(),
+      },
+      {
+        id: 'action-home',
+        type: 'action',
+        title: 'Go to Dashboard',
+        subtitle: 'Navigate to workspaces and all boards overview',
+        icon: <Home className="w-3.5 h-3.5" />,
+        action: () => navigate('/'),
+      },
+    ];
+
+    if (isBoardPage) {
+      actions.push(
+        {
+          id: 'action-view-kanban',
+          type: 'action',
+          title: 'Switch to Kanban Board View',
+          subtitle: 'View workflow columns and drag cards',
+          icon: <LayoutGrid className="w-3.5 h-3.5" />,
+          action: () => {
+            window.dispatchEvent(new CustomEvent('change-board-view', { detail: 'kanban' }));
+          },
+        },
+        {
+          id: 'action-view-calendar',
+          type: 'action',
+          title: 'Switch to Calendar View',
+          subtitle: 'View monthly schedule and deadlines',
+          icon: <Calendar className="w-3.5 h-3.5" />,
+          action: () => {
+            window.dispatchEvent(new CustomEvent('change-board-view', { detail: 'calendar' }));
+          },
+        },
+        {
+          id: 'action-view-list',
+          type: 'action',
+          title: 'Switch to List Table View',
+          subtitle: 'Compact sorting table of tasks',
+          icon: <List className="w-3.5 h-3.5" />,
+          action: () => {
+            window.dispatchEvent(new CustomEvent('change-board-view', { detail: 'list' }));
+          },
+        },
+        {
+          id: 'action-view-analytics',
+          type: 'action',
+          title: 'Switch to Analytics & Metrics View',
+          subtitle: 'View workload, completion rate, and time velocity',
+          icon: <BarChart2 className="w-3.5 h-3.5" />,
+          action: () => {
+            window.dispatchEvent(new CustomEvent('change-board-view', { detail: 'analytics' }));
+          },
+        }
+      );
+    }
+
+    return actions;
+  }, [location.pathname, theme, toggleTheme, navigate]);
 
   useEffect(() => {
     if (isOpen) {
       setQuery('');
-      setResults([]);
+      setResults(quickActions);
       setSelectedIndex(0);
       setTimeout(() => inputRef.current?.focus(), 50);
       document.body.style.overflow = 'hidden';
@@ -40,13 +115,19 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
     return () => {
       document.body.style.overflow = 'unset';
     };
-  }, [isOpen]);
+  }, [isOpen, quickActions]);
 
   useEffect(() => {
     if (!query.trim()) {
-      setResults([]);
+      setResults(quickActions);
       return;
     }
+
+    // Filter quick actions
+    const filteredActions = quickActions.filter((a) =>
+      a.title.toLowerCase().includes(query.toLowerCase()) ||
+      (a.subtitle && a.subtitle.toLowerCase().includes(query.toLowerCase()))
+    );
 
     const timer = setTimeout(async () => {
       setIsLoading(true);
@@ -71,22 +152,25 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
           extra: t.priority,
         }));
 
-        const combined = [...formattedBoards, ...formattedTasks];
+        const combined = [...filteredActions, ...formattedBoards, ...formattedTasks];
         setResults(combined);
         setSelectedIndex(0);
       } catch (err) {
         console.error('Search failed:', err);
+        setResults(filteredActions);
       } finally {
         setIsLoading(false);
       }
-    }, 200);
+    }, 180);
 
     return () => clearTimeout(timer);
-  }, [query]);
+  }, [query, quickActions]);
 
   const handleSelect = (item: SearchResult) => {
     onClose();
-    if (item.type === 'board') {
+    if (item.type === 'action' && item.action) {
+      item.action();
+    } else if (item.type === 'board') {
       navigate(`/board/${item.id}`);
     } else if (item.boardId) {
       navigate(`/board/${item.boardId}`);
@@ -163,6 +247,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
               {results.map((item, idx) => {
                 const isSelected = idx === selectedIndex;
                 const isBoard = item.type === 'board';
+                const isAction = item.type === 'action';
 
                 return (
                   <button
@@ -181,12 +266,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
                       <div
                         className={cn(
                           'w-7 h-7 rounded-lg flex items-center justify-center shrink-0 text-xs font-semibold',
-                          isBoard
+                          isAction
+                            ? 'bg-purple-100 text-purple-700 dark:bg-purple-950 dark:text-purple-400'
+                            : isBoard
                             ? 'bg-emerald-100 text-emerald-700 dark:bg-emerald-950 dark:text-emerald-400'
                             : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400'
                         )}
                       >
-                        {isBoard ? <Kanban className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5" />}
+                        {item.icon ? item.icon : isBoard ? <Kanban className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5" />}
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">

@@ -39,6 +39,7 @@ model User {
   boardMembers BoardMember[]
   assignedTasks Task[]       @relation("AssignedTasks")
   comments     Comment[]
+  activityLogs ActivityLog[]
 }
 
 model Board {
@@ -53,6 +54,8 @@ model Board {
   members     BoardMember[]
   columns     Column[]
   tasks       Task[]
+  tags        Tag[]
+  activityLogs ActivityLog[]
 }
 
 model BoardMember {
@@ -83,22 +86,64 @@ model Column {
 }
 
 model Task {
-  id           String    @id @default(uuid())
-  title        String
-  description  String?
-  columnId     String
-  boardId      String
-  position     Float
-  priority     Priority  @default(MEDIUM)
-  dueDate      DateTime?
-  assignedToId String?
-  createdAt    DateTime  @default(now())
-  updatedAt    DateTime  @updatedAt
+  id             String        @id @default(uuid())
+  title          String
+  description    String?
+  columnId       String
+  boardId        String
+  position       Float
+  priority       Priority      @default(MEDIUM)
+  dueDate        DateTime?
+  assignedToId   String?
+  estimatedHours Float?
+  loggedMinutes  Int           @default(0)
+  createdAt      DateTime      @default(now())
+  updatedAt      DateTime      @updatedAt
 
-  column       Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
-  board        Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  assignedTo   User?     @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
-  comments     Comment[]
+  column         Column        @relation(fields: [columnId], references: [id], onDelete: Cascade)
+  board          Board         @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  assignedTo     User?         @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments       Comment[]
+  subtasks       Subtask[]
+  taskTags       TaskTag[]
+  activityLogs   ActivityLog[]
+}
+
+model Subtask {
+  id          String   @id @default(uuid())
+  title       String
+  isCompleted Boolean  @default(false)
+  position    Float    @default(0)
+  taskId      String
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+}
+
+model Tag {
+  id        String    @id @default(uuid())
+  name      String
+  color     String    @default("emerald")
+  boardId   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  board     Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
+  taskTags  TaskTag[]
+
+  @@unique([boardId, name])
+}
+
+model TaskTag {
+  taskId    String
+  tagId     String
+  createdAt DateTime @default(now())
+
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
+
+  @@id([taskId, tagId])
 }
 
 model Comment {
@@ -110,6 +155,20 @@ model Comment {
   updatedAt DateTime @updatedAt
 
   task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+
+model ActivityLog {
+  id        String   @id @default(uuid())
+  action    String
+  details   String?
+  taskId    String?
+  boardId   String
+  userId    String
+  createdAt DateTime @default(now())
+
+  task      Task?    @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
 

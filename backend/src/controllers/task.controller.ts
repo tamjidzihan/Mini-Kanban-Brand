@@ -1,10 +1,12 @@
 import { Request, Response, NextFunction } from 'express';
 import { prisma } from '../config/db.js';
 import { createTaskSchema, updateTaskSchema } from '../schemas/index.js';
+import { logActivity } from '../utils/activity.js';
 
 export const createTask = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const data = createTaskSchema.parse(req.body);
+    const userId = (req as any).user?.userId;
 
     const maxPosTask = await prisma.task.findFirst({
       where: { columnId: data.columnId },
@@ -27,8 +29,20 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       },
       include: {
         assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        subtasks: { orderBy: { position: 'asc' } },
+        taskTags: { include: { tag: true } },
       },
     });
+
+    if (userId) {
+      await logActivity({
+        action: 'TASK_CREATED',
+        details: `Created task "${data.title}"`,
+        taskId: task.id,
+        boardId: data.boardId,
+        userId,
+      });
+    }
 
     res.status(201).json({ task });
   } catch (error) {
@@ -40,6 +54,7 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
   try {
     const taskId = req.params.taskId as string;
     const data = updateTaskSchema.parse(req.body);
+    const userId = (req as any).user?.userId;
 
     const existing = await prisma.task.findUnique({ where: { id: taskId } });
     if (!existing) {
@@ -53,13 +68,37 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
         ...(data.title && { title: data.title }),
         ...(data.description !== undefined && { description: data.description }),
         ...(data.priority && { priority: data.priority }),
+        ...(data.columnId && { columnId: data.columnId }),
         ...(data.dueDate !== undefined && { dueDate: data.dueDate ? new Date(data.dueDate) : null }),
         ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId }),
+        ...(data.estimatedHours !== undefined && { estimatedHours: data.estimatedHours }),
+        ...(data.loggedMinutes !== undefined && { loggedMinutes: data.loggedMinutes }),
       },
       include: {
         assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
+        subtasks: { orderBy: { position: 'asc' } },
+        taskTags: { include: { tag: true } },
       },
     });
+
+    if (userId) {
+      let activityDetails = 'Updated task details';
+      if (data.priority && data.priority !== existing.priority) {
+        activityDetails = `Changed priority from ${existing.priority} to ${data.priority}`;
+      } else if (data.columnId && data.columnId !== existing.columnId) {
+        activityDetails = 'Moved task to another column';
+      } else if (data.loggedMinutes !== undefined && data.loggedMinutes !== existing.loggedMinutes) {
+        activityDetails = `Logged time: ${Math.round(data.loggedMinutes)} minutes`;
+      }
+
+      await logActivity({
+        action: 'TASK_UPDATED',
+        details: activityDetails,
+        taskId,
+        boardId: existing.boardId,
+        userId,
+      });
+    }
 
     res.json({ task: updated });
   } catch (error) {

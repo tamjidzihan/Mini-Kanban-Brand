@@ -4,7 +4,7 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task, Role } from '../../types';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import { Calendar, GripVertical, MoreVertical, Pencil, Trash2, Clock, AlertCircle } from 'lucide-react';
+import { Calendar, GripVertical, MoreVertical, Pencil, Trash2, Clock, AlertCircle, CheckSquare, Timer } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { getPriorityColor } from '../../lib/colors';
 import { getDueStatus } from '../../lib/format';
@@ -46,6 +46,19 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const dueStatus = getDueStatus(task.dueDate);
   const priorityColor = getPriorityColor(task.priority);
+
+  const subtasks = task.subtasks || [];
+  const completedSubtasks = subtasks.filter((s) => s.isCompleted).length;
+  const tags = task.taskTags ? task.taskTags.map((tt) => tt.tag).filter(Boolean) : [];
+
+  const tagColors: Record<string, string> = {
+    emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
+    sky: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 border-sky-200 dark:border-sky-500/20',
+    violet: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400 border-violet-200 dark:border-violet-500/20',
+    rose: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20',
+    amber: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20',
+    slate: 'bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-slate-300 border-slate-200 dark:border-gray-700',
+  };
 
   return (
     <div
@@ -133,11 +146,57 @@ export const TaskCard: React.FC<TaskCardProps> = ({
         </p>
       )}
 
-      {/* Footer info: Priority Badge, Due Date Pill, Assignee */}
+      {/* Tags Row */}
+      {tags.length > 0 && (
+        <div className="mt-2 pl-5 flex items-center gap-1 flex-wrap">
+          {tags.map((tag) => (
+            <span
+              key={tag.id}
+              className={cn(
+                'text-[10px] font-semibold px-2 py-0.2 rounded-md border',
+                tagColors[tag.color] || tagColors.emerald
+              )}
+            >
+              {tag.name}
+            </span>
+          ))}
+        </div>
+      )}
+
+      {/* Footer info: Priority Badge, Subtasks Progress, Due Date Pill, Assignee */}
       <div className="mt-3 pt-2.5 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between gap-2">
-        <Badge variant={priorityColor as any} dot={task.priority === 'URGENT'}>
-          {task.priority}
-        </Badge>
+        <div className="flex items-center gap-1.5">
+          <Badge variant={priorityColor as any} dot={task.priority === 'URGENT'}>
+            {task.priority}
+          </Badge>
+
+          {/* Subtasks Progress Pill */}
+          {subtasks.length > 0 && (
+            <span
+              className={cn(
+                'inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded-md border',
+                completedSubtasks === subtasks.length
+                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-300 dark:border-emerald-500/30'
+                  : 'bg-slate-100 text-slate-600 dark:bg-gray-800 dark:text-slate-400 border-gray-200 dark:border-gray-700'
+              )}
+              title={`${completedSubtasks} of ${subtasks.length} subtasks completed`}
+            >
+              <CheckSquare className="w-3 h-3" />
+              <span>{completedSubtasks}/{subtasks.length}</span>
+            </span>
+          )}
+
+          {/* Logged Time Pill */}
+          {task.loggedMinutes && task.loggedMinutes > 0 ? (
+            <span
+              className="inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400"
+              title={`Logged: ${task.loggedMinutes} minutes`}
+            >
+              <Timer className="w-3 h-3 text-slate-400" />
+              <span>{Math.round(task.loggedMinutes / 60 * 10) / 10}h</span>
+            </span>
+          ) : null}
+        </div>
 
         <div className="flex items-center gap-2 shrink-0">
           {dueStatus && (

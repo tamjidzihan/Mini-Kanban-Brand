@@ -28,3 +28,8 @@ prisma/*.db-journal
 
 # Database logs / Docker data
 pgdata/
+
+
+# Prompt files
+Mini Kanban Board Development Prompt.md
+design_react.md

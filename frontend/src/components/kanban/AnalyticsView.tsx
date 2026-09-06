@@ -45,6 +45,50 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
     return counts;
   }, [allTasks]);
 
+  // Subtask metrics
+  const subtaskStats = useMemo(() => {
+    let total = 0;
+    let completed = 0;
+    allTasks.forEach((t) => {
+      if (t.subtasks && t.subtasks.length > 0) {
+        total += t.subtasks.length;
+        completed += t.subtasks.filter((s) => s.isCompleted).length;
+      }
+    });
+    const rate = total > 0 ? Math.round((completed / total) * 100) : 0;
+    return { total, completed, rate };
+  }, [allTasks]);
+
+  // Time tracking metrics
+  const timeStats = useMemo(() => {
+    let totalLoggedMins = 0;
+    let totalEstHours = 0;
+    allTasks.forEach((t) => {
+      if (t.loggedMinutes) totalLoggedMins += t.loggedMinutes;
+      if (t.estimatedHours) totalEstHours += t.estimatedHours;
+    });
+    const loggedHours = Math.round((totalLoggedMins / 60) * 10) / 10;
+    return { loggedMinutes: totalLoggedMins, loggedHours, estHours: totalEstHours };
+  }, [allTasks]);
+
+  // Tag distribution
+  const tagCounts = useMemo(() => {
+    const map: Record<string, { name: string; color: string; count: number }> = {};
+    allTasks.forEach((t) => {
+      if (t.tags) {
+        t.tags.forEach((tt) => {
+          if (tt.tag) {
+            if (!map[tt.tag.id]) {
+              map[tt.tag.id] = { name: tt.tag.name, color: tt.tag.color, count: 0 };
+            }
+            map[tt.tag.id].count++;
+          }
+        });
+      }
+    });
+    return Object.values(map).sort((a, b) => b.count - a.count);
+  }, [allTasks]);
+
   const assigneeCounts = useMemo(() => {
     const map: Record<string, { name: string; avatarUrl?: string | null; count: number }> = {};
     allTasks.forEach((t) => {
@@ -213,7 +257,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
         </Card>
 
         {/* Assignee Workload Distribution */}
-        <Card className="p-5 space-y-4 lg:col-span-2">
+        <Card className="p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
             <div className="flex items-center gap-2">
               <Users className="w-4 h-4 text-emerald-600" />
@@ -223,7 +267,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
             </div>
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-3 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             {assigneeCounts.map((a, idx) => (
               <div
                 key={idx}
@@ -240,6 +284,71 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
                 </span>
               </div>
             ))}
+          </div>
+        </Card>
+
+        {/* Time Tracking & Subtask Velocity */}
+        <Card className="p-5 space-y-4">
+          <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
+            <div className="flex items-center gap-2">
+              <TrendingUp className="w-4 h-4 text-violet-600" />
+              <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
+                Subtasks & Time Velocity
+              </h3>
+            </div>
+          </div>
+
+          <div className="space-y-4">
+            <div className="p-3.5 rounded-xl bg-slate-50 dark:bg-gray-800/60 border border-gray-100 dark:border-gray-800 space-y-2">
+              <div className="flex justify-between items-center text-xs">
+                <span className="font-semibold text-slate-700 dark:text-slate-300">Subtask Completion</span>
+                <span className="font-bold text-emerald-600 dark:text-emerald-400 tabular-nums">
+                  {subtaskStats.completed} / {subtaskStats.total} ({subtaskStats.rate}%)
+                </span>
+              </div>
+              <ProgressBar value={subtaskStats.completed} max={subtaskStats.total || 1} tone="emerald" />
+            </div>
+
+            <div className="grid grid-cols-2 gap-3">
+              <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40">
+                <div className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Total Logged Time</div>
+                <div className="text-xl font-bold text-emerald-800 dark:text-emerald-300 tabular-nums mt-1">
+                  {timeStats.loggedHours}h
+                </div>
+                <div className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">
+                  ({timeStats.loggedMinutes} minutes logged)
+                </div>
+              </div>
+
+              <div className="p-3 rounded-xl bg-violet-50/60 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40">
+                <div className="text-[11px] font-semibold text-violet-700 dark:text-violet-400">Estimated Effort</div>
+                <div className="text-xl font-bold text-violet-800 dark:text-violet-300 tabular-nums mt-1">
+                  {timeStats.estHours}h
+                </div>
+                <div className="text-[10px] text-violet-600/70 dark:text-violet-400/70 mt-0.5">
+                  planned across tasks
+                </div>
+              </div>
+            </div>
+
+            {/* Tags Overview */}
+            {tagCounts.length > 0 && (
+              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
+                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Active Tags</div>
+                <div className="flex flex-wrap gap-1.5">
+                  {tagCounts.map((tag, idx) => (
+                    <span
+                      key={idx}
+                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
+                      style={{ backgroundColor: tag.color }}
+                    >
+                      <span>{tag.name}</span>
+                      <span className="bg-black/20 px-1.5 py-0.2 rounded-full text-[10px]">{tag.count}</span>
+                    </span>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </Card>
       </div>

@@ -14,6 +14,7 @@ import {
   Kanban as KanbanIcon,
   List as ListIcon,
   BarChart3,
+  Calendar as CalendarIcon,
   Filter,
   Download,
   ChevronRight,
@@ -26,7 +27,7 @@ import { Link } from 'react-router-dom';
 import { cn } from '../../lib/cn';
 import { useClickOutside } from '../../hooks/useClickOutside';
 
-export type ViewMode = 'kanban' | 'list' | 'analytics';
+export type ViewMode = 'kanban' | 'list' | 'analytics' | 'calendar';
 
 export interface BoardHeaderProps {
   board: Board;
@@ -83,6 +84,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
   const viewOptions: TabOption<ViewMode>[] = [
     { id: 'kanban', label: 'Board', icon: <KanbanIcon className="w-3.5 h-3.5" /> },
     { id: 'list', label: 'List', icon: <ListIcon className="w-3.5 h-3.5" /> },
+    { id: 'calendar', label: 'Calendar', icon: <CalendarIcon className="w-3.5 h-3.5" /> },
     { id: 'analytics', label: 'Analytics', icon: <BarChart3 className="w-3.5 h-3.5" /> },
   ];
 

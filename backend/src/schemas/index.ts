@@ -57,8 +57,11 @@ export const updateTaskSchema = z.object({
   title: z.string().min(1, 'Task title is required').max(150).optional(),
   description: z.string().nullable().optional(),
   priority: z.enum(['LOW', 'MEDIUM', 'HIGH', 'URGENT']).optional(),
+  columnId: z.string().uuid('Invalid column ID').optional(),
   dueDate: z.string().nullable().optional(),
   assignedToId: z.string().nullable().optional(),
+  estimatedHours: z.number().nullable().optional(),
+  loggedMinutes: z.number().optional(),
 });
 
 export const moveTaskSchema = z.object({

@@ -36,6 +36,47 @@ export interface BoardMember {
   createdAt: string;
 }
 
+export interface Tag {
+  id: string;
+  name: string;
+  color: string;
+  boardId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface TaskTag {
+  taskId: string;
+  tagId: string;
+  tag: Tag;
+  createdAt: string;
+}
+
+export interface Subtask {
+  id: string;
+  title: string;
+  isCompleted: boolean;
+  position: number;
+  taskId: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface ActivityLog {
+  id: string;
+  action: string;
+  details?: string | null;
+  taskId?: string | null;
+  boardId: string;
+  userId: string;
+  user: User;
+  task?: {
+    id: string;
+    title: string;
+  } | null;
+  createdAt: string;
+}
+
 export interface Task {
   id: string;
   title: string;
@@ -47,6 +88,11 @@ export interface Task {
   dueDate?: string | null;
   assignedToId?: string | null;
   assignedTo?: User | null;
+  estimatedHours?: number | null;
+  loggedMinutes?: number;
+  subtasks?: Subtask[];
+  tags?: TaskTag[];
+  taskTags?: TaskTag[];
   comments?: Comment[];
   createdAt: string;
   updatedAt: string;
@@ -80,6 +126,7 @@ export interface Board {
   owner?: User;
   members?: BoardMember[];
   columns?: Column[];
+  tags?: Tag[];
   _count?: {
     tasks: number;
     columns: number;
@@ -87,4 +134,5 @@ export interface Board {
   createdAt: string;
   updatedAt: string;
 }
+
 
