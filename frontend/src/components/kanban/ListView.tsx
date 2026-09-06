@@ -122,11 +122,14 @@ export const ListView: React.FC<ListViewProps> = ({
                 return (
                   <tr
                     key={t.id}
-                    className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors"
+                    onClick={() => onEditTask(t)}
+                    className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
                   >
                     <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
                       <div className="max-w-md">
-                        <div className="font-semibold text-xs truncate">{t.title}</div>
+                        <div className="font-semibold text-xs truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                          {t.title}
+                        </div>
                         {t.description && (
                           <div className="text-[11px] text-slate-400 truncate mt-0.5">
                             {t.description}
@@ -176,7 +179,7 @@ export const ListView: React.FC<ListViewProps> = ({
                       )}
                     </td>
                     {canEdit && (
-                      <td className="py-3 px-4 text-right">
+                      <td className="py-3 px-4 text-right" onClick={(e) => e.stopPropagation()}>
                         <div className="inline-flex items-center gap-1">
                           <button
                             type="button"

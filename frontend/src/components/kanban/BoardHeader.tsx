@@ -308,7 +308,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
             <select
               value={priorityFilter}
               onChange={(e) => onPriorityFilterChange(e.target.value)}
-              className="text-xs bg-slate-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2.5 outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="text-xs bg-slate-50 dark:bg-gray-800 text-slate-800 dark:text-slate-200 border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2.5 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 [&>option]:dark:bg-gray-800 [&>option]:dark:text-slate-100"
             >
               <option value="ALL">All Priorities</option>
               <option value="URGENT">Urgent</option>
@@ -324,7 +324,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
             <select
               value={dueFilter}
               onChange={(e) => onDueFilterChange(e.target.value)}
-              className="text-xs bg-slate-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2.5 outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="text-xs bg-slate-50 dark:bg-gray-800 text-slate-800 dark:text-slate-200 border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2.5 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 [&>option]:dark:bg-gray-800 [&>option]:dark:text-slate-100"
             >
               <option value="ALL">All Dates</option>
               <option value="OVERDUE">Overdue</option>
@@ -339,7 +339,7 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
             <select
               value={assigneeFilter}
               onChange={(e) => onAssigneeFilterChange(e.target.value)}
-              className="text-xs bg-slate-50 dark:bg-gray-800 border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2.5 outline-none focus:ring-2 focus:ring-emerald-500/40"
+              className="text-xs bg-slate-50 dark:bg-gray-800 text-slate-800 dark:text-slate-200 border border-gray-200 dark:border-gray-700 rounded-lg py-1 px-2.5 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 [&>option]:dark:bg-gray-800 [&>option]:dark:text-slate-100"
             >
               <option value="ALL">All Assignees</option>
               <option value="UNASSIGNED">Unassigned</option>

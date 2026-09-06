@@ -34,7 +34,7 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
             id={inputId}
             ref={ref}
             className={cn(
-              'w-full rounded-lg border text-sm py-2 px-3 transition-colors',
+              'w-full rounded-lg border text-sm py-2 px-3 transition-colors dark:[color-scheme:dark]',
               'bg-white dark:bg-gray-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500',
               'border-gray-300 dark:border-gray-700',
               'focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/40',
@@ -87,7 +87,7 @@ export const Select = forwardRef<HTMLSelectElement, SelectProps>(
             id={selectId}
             ref={ref}
             className={cn(
-              'w-full rounded-lg border text-sm py-2 pl-3 pr-9 appearance-none transition-colors cursor-pointer',
+              'w-full rounded-lg border text-sm py-2 pl-3 pr-9 appearance-none transition-colors cursor-pointer dark:[color-scheme:dark]',
               'bg-white dark:bg-gray-800 text-slate-900 dark:text-slate-100',
               'border-gray-300 dark:border-gray-700',
               'focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/40',
@@ -133,7 +133,7 @@ export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
           ref={ref}
           rows={rows}
           className={cn(
-            'w-full rounded-lg border text-sm py-2 px-3 transition-colors resize-none',
+            'w-full rounded-lg border text-sm py-2 px-3 transition-colors resize-none dark:[color-scheme:dark]',
             'bg-white dark:bg-gray-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500',
             'border-gray-300 dark:border-gray-700',
             'focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/40',

@@ -7,6 +7,11 @@
     color-scheme: light dark;
   }
 
+  html.dark {
+    color-scheme: dark;
+    background-color: #030712;
+  }
+
   body {
     @apply min-h-screen bg-gray-50 text-slate-900 dark:bg-gray-950 dark:text-slate-100 antialiased;
     text-rendering: optimizeLegibility;

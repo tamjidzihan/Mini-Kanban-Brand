@@ -247,7 +247,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                     <select
                       value={m.role}
                       onChange={(e) => onUpdateRole(m.id, e.target.value as Role)}
-                      className="px-2 py-1 text-xs bg-slate-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500/40 font-semibold"
+                      className="px-2 py-1 text-xs bg-slate-50 dark:bg-gray-800 border border-gray-300 dark:border-gray-700 rounded-lg text-slate-900 dark:text-slate-100 outline-none focus:ring-2 focus:ring-emerald-500/40 font-semibold dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 [&>option]:dark:bg-gray-800 [&>option]:dark:text-slate-100"
                     >
                       <option value="VIEWER">Viewer</option>
                       <option value="EDITOR">Editor</option>

@@ -38,6 +38,7 @@ model User {
   ownedBoards  Board[]       @relation("BoardOwner")
   boardMembers BoardMember[]
   assignedTasks Task[]       @relation("AssignedTasks")
+  comments     Comment[]
 }
 
 model Board {
@@ -97,4 +98,18 @@ model Task {
   column       Column    @relation(fields: [columnId], references: [id], onDelete: Cascade)
   board        Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
   assignedTo   User?     @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
+  comments     Comment[]
 }
+
+model Comment {
+  id        String   @id @default(uuid())
+  content   String
+  taskId    String
+  userId    String
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+}
+

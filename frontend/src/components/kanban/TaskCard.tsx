@@ -8,6 +8,7 @@ import { Calendar, GripVertical, MoreVertical, Pencil, Trash2, Clock, AlertCircl
 import { cn } from '../../lib/cn';
 import { getPriorityColor } from '../../lib/colors';
 import { getDueStatus } from '../../lib/format';
+import { useClickOutside } from '../../hooks/useClickOutside';
 
 export interface TaskCardProps {
   task: Task;
@@ -23,6 +24,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
   onDelete,
 }) => {
   const [showMenu, setShowMenu] = useState(false);
+  const menuRef = useClickOutside<HTMLDivElement>(() => setShowMenu(false), showMenu);
   const canEdit = userRole === 'OWNER' || userRole === 'EDITOR';
 
   const {
@@ -49,8 +51,9 @@ export const TaskCard: React.FC<TaskCardProps> = ({
     <div
       ref={setNodeRef}
       style={style}
+      onClick={() => onEdit(task)}
       className={cn(
-        'group relative bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl p-3.5',
+        'group relative bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl p-3.5 cursor-pointer',
         'shadow-card hover:shadow-dropdown hover:border-gray-300 dark:hover:border-gray-700 transition-all duration-150',
         isDragging && 'opacity-30 scale-95 border-emerald-500 shadow-2xl'
       )}
@@ -64,21 +67,21 @@ export const TaskCard: React.FC<TaskCardProps> = ({
               {...listeners}
               aria-label="Drag task to reorder"
               type="button"
+              onClick={(e) => e.stopPropagation()}
               className="cursor-grab active:cursor-grabbing text-slate-300 hover:text-slate-500 dark:text-slate-600 dark:hover:text-slate-400 p-0.5 rounded shrink-0"
             >
               <GripVertical className="w-3.5 h-3.5" />
             </button>
           )}
           <h4
-            onClick={() => onEdit(task)}
-            className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
+            className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors"
           >
             {task.title}
           </h4>
         </div>
 
         {canEdit && (
-          <div className="relative shrink-0">
+          <div ref={menuRef} className="relative shrink-0" onClick={(e) => e.stopPropagation()}>
             <button
               type="button"
               onClick={(e) => {
@@ -92,39 +95,30 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </button>
 
             {showMenu && (
-              <>
-                <div
-                  className="fixed inset-0 z-30"
+              <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-dropdown py-1 z-40 animate-in fade-in zoom-in-95">
+                <button
+                  type="button"
                   onClick={(e) => {
                     e.stopPropagation();
                     setShowMenu(false);
+                    onEdit(task);
                   }}
-                />
-                <div className="absolute right-0 mt-1 w-32 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-dropdown py-1 z-40 animate-in fade-in zoom-in-95">
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onEdit(task);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 flex items-center gap-2"
-                  >
-                    <Pencil className="w-3 h-3" /> Edit
-                  </button>
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setShowMenu(false);
-                      onDelete(task.id);
-                    }}
-                    className="w-full text-left px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center gap-2"
-                  >
-                    <Trash2 className="w-3 h-3" /> Delete
-                  </button>
-                </div>
-              </>
+                  className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 flex items-center gap-2"
+                >
+                  <Pencil className="w-3 h-3" /> Edit
+                </button>
+                <button
+                  type="button"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    setShowMenu(false);
+                    onDelete(task.id);
+                  }}
+                  className="w-full text-left px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center gap-2"
+                >
+                  <Trash2 className="w-3 h-3" /> Delete
+                </button>
+              </div>
             )}
           </div>
         )}
@@ -133,8 +127,7 @@ export const TaskCard: React.FC<TaskCardProps> = ({
       {/* Description */}
       {task.description && (
         <p
-          onClick={() => onEdit(task)}
-          className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed cursor-pointer"
+          className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed"
         >
           {task.description}
         </p>

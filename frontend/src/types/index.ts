@@ -47,6 +47,17 @@ export interface Task {
   dueDate?: string | null;
   assignedToId?: string | null;
   assignedTo?: User | null;
+  comments?: Comment[];
+  createdAt: string;
+  updatedAt: string;
+}
+
+export interface Comment {
+  id: string;
+  content: string;
+  taskId: string;
+  userId: string;
+  user: User;
   createdAt: string;
   updatedAt: string;
 }
@@ -76,3 +87,4 @@ export interface Board {
   createdAt: string;
   updatedAt: string;
 }
+

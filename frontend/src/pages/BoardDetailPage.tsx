@@ -9,6 +9,7 @@ import { TaskModal } from '../components/kanban/TaskModal';
 import { ColumnModal } from '../components/kanban/ColumnModal';
 import { BoardModal } from '../components/kanban/BoardModal';
 import { ShareBoardModal } from '../components/kanban/ShareBoardModal';
+import { TaskDetailSidebar } from '../components/kanban/TaskDetailSidebar';
 import { ConfirmDialog } from '../components/ui/ConfirmDialog';
 import { ColumnSkeleton } from '../components/ui/Skeleton';
 import { Board, Column, Task, Role } from '../types';
@@ -45,6 +46,10 @@ export const BoardDetailPage: React.FC = () => {
   const [isBoardOpen, setIsBoardOpen] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
+
+  // Right Detail Space State
+  const [selectedTask, setSelectedTask] = useState<Task | null>(null);
+  const [isDetailSidebarOpen, setIsDetailSidebarOpen] = useState(false);
 
   // Confirmation dialog state
   const [confirm, setConfirm] = useState<{
@@ -232,6 +237,30 @@ export const BoardDetailPage: React.FC = () => {
     }
   };
 
+  const handleOpenTaskDetail = (task: Task) => {
+    setSelectedTask(task);
+    setIsDetailSidebarOpen(true);
+  };
+
+  const handleUpdateTaskFromSidebar = async (taskId: string, data: Partial<Task>) => {
+    try {
+      await api.patch(`/tasks/${taskId}`, data);
+      await fetchBoardData();
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update task');
+      throw err;
+    }
+  };
+
+  const liveSelectedTask = useMemo(() => {
+    if (!selectedTask) return null;
+    for (const col of columns) {
+      const found = col.tasks.find((t) => t.id === selectedTask.id);
+      if (found) return found;
+    }
+    return selectedTask;
+  }, [columns, selectedTask]);
+
   if (isLoading) {
     return (
       <PageLayout>
@@ -308,10 +337,7 @@ export const BoardDetailPage: React.FC = () => {
               setTargetColId(colId);
               setIsTaskOpen(true);
             }}
-            onEditTask={(task) => {
-              setEditingTask(task);
-              setIsTaskOpen(true);
-            }}
+            onEditTask={handleOpenTaskDetail}
             onDeleteTask={(id) => setConfirm({ isOpen: true, type: 'task', id })}
             onEditColumn={(col) => {
               setEditingCol(col);
@@ -325,16 +351,28 @@ export const BoardDetailPage: React.FC = () => {
           <ListView
             columns={filteredColumns}
             userRole={currentRole}
-            onEditTask={(task) => {
-              setEditingTask(task);
-              setIsTaskOpen(true);
-            }}
+            onEditTask={handleOpenTaskDetail}
             onDeleteTask={(id) => setConfirm({ isOpen: true, type: 'task', id })}
           />
         )}
 
         {viewMode === 'analytics' && <AnalyticsView columns={columns} />}
       </div>
+
+      {/* Right Side Task Detail Panel Space */}
+      <TaskDetailSidebar
+        task={liveSelectedTask}
+        isOpen={isDetailSidebarOpen}
+        onClose={() => {
+          setIsDetailSidebarOpen(false);
+          setSelectedTask(null);
+        }}
+        columns={columns}
+        members={usersInBoard}
+        userRole={currentRole}
+        onUpdateTask={handleUpdateTaskFromSidebar}
+        onDeleteTask={(id) => setConfirm({ isOpen: true, type: 'task', id })}
+      />
 
       {/* Task Creation & Edit Modal */}
       <TaskModal
