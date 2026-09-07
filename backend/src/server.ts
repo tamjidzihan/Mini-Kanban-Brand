@@ -26,7 +26,7 @@ app.use(errorHandler);
 const PORT = parseInt(ENV.PORT, 10) || 5000;
 
 app.listen(PORT, () => {
-  console.log(`🚀 Mini Kanban API Server running on port ${PORT}`);
+  console.log(`Mini Kanban API Server running on port http://localhost:${PORT}`);
 });
 
 export default app;
