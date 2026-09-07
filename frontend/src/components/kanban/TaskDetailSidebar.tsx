@@ -2,10 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { Task, Column, User, Role, Priority, Comment, Subtask, Tag, ActivityLog } from '../../types';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
-import { Button } from '../ui/Button';
 import { ProgressBar } from '../ui/ProgressBar';
-import { getRoleColor } from '../../lib/colors';
-import { getDueStatus } from '../../lib/format';
 import { cn } from '../../lib/cn';
 import { api } from '../../lib/api';
 import { useAuth } from '../../context/AuthContext';
@@ -24,7 +21,6 @@ import {
   Send,
   CheckCircle2,
   AlertTriangle,
-  ArrowRight,
   Sparkles,
   Link as LinkIcon,
   Check,
@@ -36,8 +32,6 @@ import {
   Pause,
   History,
   Timer,
-  Bot,
-  Layers,
   Pencil,
   Eye,
 } from 'lucide-react';
@@ -740,13 +734,13 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
                   className={cn(
                     'inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border',
                     remainingInfo.urgency === 'critical' &&
-                      'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border-rose-500/30',
+                    'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border-rose-500/30',
                     remainingInfo.urgency === 'high' &&
-                      'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 border-amber-500/30',
+                    'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-300 border-amber-500/30',
                     remainingInfo.urgency === 'medium' &&
-                      'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300 border-sky-500/30',
+                    'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-300 border-sky-500/30',
                     remainingInfo.urgency === 'normal' &&
-                      'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border-emerald-500/30'
+                    'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-300 border-emerald-500/30'
                   )}
                 >
                   {remainingInfo.icon}
