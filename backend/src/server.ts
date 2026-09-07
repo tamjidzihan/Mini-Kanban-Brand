@@ -4,6 +4,7 @@ import morgan from 'morgan';
 import { ENV } from './config/env.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
+import { connectDB } from './config/db.js';
 
 const app = express();
 
@@ -25,8 +26,19 @@ app.use(errorHandler);
 
 const PORT = parseInt(ENV.PORT, 10) || 5000;
 
-app.listen(PORT, () => {
-  console.log(`Mini Kanban API Server running on port http://localhost:${PORT}`);
-});
+// Connect to database first, then start server
+const startServer = async () => {
+  try {
+    await connectDB(); // Connect to MySQL
+    app.listen(PORT, () => {
+      console.log(`✅ Mini Kanban API Server running on http://localhost:${PORT}`);
+    });
+  } catch (error) {
+    console.error('❌ Failed to start server:', error);
+    process.exit(1);
+  }
+};
+
+startServer();
 
 export default app;
