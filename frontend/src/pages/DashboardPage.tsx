@@ -10,6 +10,7 @@ import { EmptyState } from '../components/ui/EmptyState';
 import { StatCardSkeleton, BoardCardSkeleton } from '../components/ui/Skeleton';
 import { Avatar } from '../components/ui/Avatar';
 import { Badge } from '../components/ui/Badge';
+import { MarkdownViewer } from '../components/ui/MarkdownViewer';
 import { Board } from '../types';
 import { api } from '../lib/api';
 import { useAuth } from '../context/AuthContext';
@@ -289,9 +290,11 @@ export const DashboardPage: React.FC = () => {
                       </div>
 
                       {/* Description */}
-                      <p className="mt-1.5 text-xs text-slate-500 dark:text-slate-400 line-clamp-2 leading-relaxed min-h-[32px]">
-                        {b.description || 'No description provided.'}
-                      </p>
+                      <MarkdownViewer
+                        content={b.description || ''}
+                        emptyMessage="No description provided."
+                        className="mt-1.5 max-h-10 min-h-[32px] overflow-hidden text-xs text-slate-500 dark:text-slate-400"
+                      />
                     </div>
 
                     {/* Card Footer */}

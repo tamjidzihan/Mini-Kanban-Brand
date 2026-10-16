@@ -1,5 +1,6 @@
 import React from 'react';
 import { cn } from '../../lib/cn';
+import { api } from '../../lib/api';
 
 export interface AvatarProps {
   name?: string;
@@ -59,12 +60,15 @@ export const Avatar: React.FC<AvatarProps> = ({
 
   const initials = getInitials(name);
   const colorClass = getColorFromName(name);
+  const imageSrc = src?.startsWith('/')
+    ? new URL(src, api.defaults.baseURL).toString()
+    : src;
 
   return (
     <div className="relative inline-flex shrink-0">
-      {src ? (
+      {imageSrc ? (
         <img
-          src={src}
+          src={imageSrc}
           alt={name}
           className={cn(
             'rounded-full object-cover border border-gray-200/80 dark:border-gray-800',

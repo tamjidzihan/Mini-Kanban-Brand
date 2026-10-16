@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { Board, Role, User } from '../../types';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
+import { MarkdownViewer } from '../ui/MarkdownViewer';
 import { Button } from '../ui/Button';
 import { Tabs, TabOption } from '../ui/Tabs';
 import { getRoleColor } from '../../lib/colors';
@@ -125,9 +126,10 @@ export const BoardHeader: React.FC<BoardHeaderProps> = ({
             <Badge variant={getRoleColor(currentRole) as any}>{currentRole}</Badge>
           </div>
           {board.description && (
-            <p className="text-xs text-slate-500 dark:text-slate-400 line-clamp-1 max-w-2xl">
-              {board.description}
-            </p>
+            <MarkdownViewer
+              content={board.description}
+              className="max-h-10 max-w-2xl overflow-hidden text-xs text-slate-500 dark:text-slate-400"
+            />
           )}
         </div>
 

@@ -27,7 +27,8 @@ prisma/*.db
 prisma/*.db-journal
 
 # Database logs / Docker data
-pgdata/
+mariadb_data/
+/backend/uploads/
 
 
 # Prompt files

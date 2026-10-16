@@ -1,154 +1,43 @@
 import React from 'react';
+import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { cn } from '../../lib/cn';
-import { CheckSquare, Square } from 'lucide-react';
 
 interface MarkdownViewerProps {
   content: string;
   className?: string;
+  emptyMessage?: string;
 }
 
-export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({ content, className }) => {
-  if (!content || !content.trim()) {
-    return <p className="text-xs text-slate-400 italic">No description provided.</p>;
+export const MarkdownViewer: React.FC<MarkdownViewerProps> = ({
+  content,
+  className,
+  emptyMessage = 'No description provided.',
+}) => {
+  if (!content.trim()) {
+    return <p className="text-xs text-slate-400 italic">{emptyMessage}</p>;
   }
 
-  // Parse lines into structured blocks
-  const lines = content.split('\n');
-
-  // Helper to format inline elements: **bold**, *italic*, `code`
-  const renderInline = (text: string) => {
-    // Replace inline bold, code, and italic with formatted spans
-    const parts: React.ReactNode[] = [];
-    let current = text;
-    let key = 0;
-
-    // Regex for bold **text** or inline code `code` or italic *text*
-    const regex = /(\*\*[^*]+\*\*|`[^`]+`|\*[^*]+\*)/g;
-    let match: RegExpExecArray | null;
-    let lastIndex = 0;
-
-    while ((match = regex.exec(current)) !== null) {
-      if (match.index > lastIndex) {
-        parts.push(current.substring(lastIndex, match.index));
-      }
-
-      const matchText = match[0];
-      if (matchText.startsWith('**') && matchText.endsWith('**')) {
-        parts.push(
-          <strong key={key++} className="font-bold text-slate-900 dark:text-white">
-            {matchText.slice(2, -2)}
-          </strong>
-        );
-      } else if (matchText.startsWith('`') && matchText.endsWith('`')) {
-        parts.push(
-          <code
-            key={key++}
-            className="px-1.5 py-0.5 rounded bg-slate-200 dark:bg-gray-700 text-emerald-700 dark:text-emerald-400 font-mono text-[11px]"
-          >
-            {matchText.slice(1, -1)}
-          </code>
-        );
-      } else if (matchText.startsWith('*') && matchText.endsWith('*')) {
-        parts.push(
-          <em key={key++} className="italic text-slate-600 dark:text-slate-300">
-            {matchText.slice(1, -1)}
-          </em>
-        );
-      }
-
-      lastIndex = regex.lastIndex;
-    }
-
-    if (lastIndex < current.length) {
-      parts.push(current.substring(lastIndex));
-    }
-
-    return parts.length > 0 ? parts : text;
-  };
-
   return (
-    <div className={cn('text-xs text-slate-800 dark:text-slate-200 space-y-2.5 leading-relaxed', className)}>
-      {lines.map((line, idx) => {
-        const trimmed = line.trim();
-
-        // Empty line
-        if (!trimmed) {
-          return <div key={idx} className="h-1" />;
-        }
-
-        // Heading 1 (# Heading)
-        if (trimmed.startsWith('# ')) {
-          return (
-            <h2 key={idx} className="text-sm font-bold text-slate-900 dark:text-white border-b border-gray-200 dark:border-gray-700 pb-1 mt-3">
-              {renderInline(trimmed.slice(2))}
-            </h2>
-          );
-        }
-
-        // Heading 2 (## Heading)
-        if (trimmed.startsWith('## ')) {
-          return (
-            <h3 key={idx} className="text-xs font-bold text-emerald-700 dark:text-emerald-400 uppercase tracking-wide mt-2.5">
-              {renderInline(trimmed.slice(3))}
-            </h3>
-          );
-        }
-
-        // Heading 3 (### Heading)
-        if (trimmed.startsWith('### ')) {
-          return (
-            <h4 key={idx} className="text-xs font-bold text-slate-900 dark:text-slate-100 flex items-center gap-1.5 mt-2 text-[11px] uppercase tracking-wider text-emerald-600 dark:text-emerald-400">
-              <span>{renderInline(trimmed.slice(4))}</span>
-            </h4>
-          );
-        }
-
-        // Checklist item checked (- [x] text)
-        if (trimmed.startsWith('- [x]') || trimmed.startsWith('- [X]')) {
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-1 text-slate-400 dark:text-slate-500 line-through">
-              <CheckSquare className="w-3.5 h-3.5 text-emerald-500 shrink-0 mt-0.5" />
-              <span>{renderInline(trimmed.slice(5).trim())}</span>
-            </div>
-          );
-        }
-
-        // Checklist item unchecked (- [ ] text)
-        if (trimmed.startsWith('- [ ]')) {
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-1 text-slate-700 dark:text-slate-300">
-              <Square className="w-3.5 h-3.5 text-slate-400 dark:text-slate-500 shrink-0 mt-0.5" />
-              <span>{renderInline(trimmed.slice(5).trim())}</span>
-            </div>
-          );
-        }
-
-        // Bullet point (- text or * text)
-        if (trimmed.startsWith('- ') || trimmed.startsWith('* ')) {
-          return (
-            <div key={idx} className="flex items-start gap-2 pl-2">
-              <span className="w-1.5 h-1.5 rounded-full bg-emerald-500 shrink-0 mt-1.5" />
-              <span>{renderInline(trimmed.slice(2))}</span>
-            </div>
-          );
-        }
-
-        // Blockquote (> quote)
-        if (trimmed.startsWith('> ')) {
-          return (
-            <blockquote key={idx} className="border-l-2 border-emerald-500 pl-3 italic text-slate-600 dark:text-slate-400 my-1">
-              {renderInline(trimmed.slice(2))}
-            </blockquote>
-          );
-        }
-
-        // Regular paragraph
-        return (
-          <p key={idx} className="text-slate-700 dark:text-slate-300">
-            {renderInline(line)}
-          </p>
-        );
-      })}
+    <div
+      className={cn(
+        'min-w-0 break-words text-xs leading-relaxed text-slate-700 dark:text-slate-300',
+        '[&_h1]:mb-2 [&_h1]:mt-3 [&_h1]:border-b [&_h1]:border-gray-200 [&_h1]:pb-1 [&_h1]:text-base [&_h1]:font-bold [&_h1]:text-slate-900 dark:[&_h1]:border-gray-700 dark:[&_h1]:text-white',
+        '[&_h2]:mb-1.5 [&_h2]:mt-3 [&_h2]:text-sm [&_h2]:font-bold [&_h2]:text-slate-900 dark:[&_h2]:text-white',
+        '[&_h3]:mb-1 [&_h3]:mt-2 [&_h3]:text-xs [&_h3]:font-bold [&_h3]:text-slate-900 dark:[&_h3]:text-slate-100',
+        '[&_p]:my-1.5 [&_strong]:font-bold [&_strong]:text-slate-900 dark:[&_strong]:text-white',
+        '[&_a]:text-emerald-700 [&_a]:underline [&_a]:underline-offset-2 hover:[&_a]:text-emerald-600 dark:[&_a]:text-emerald-400',
+        '[&_ul]:my-2 [&_ul]:list-disc [&_ul]:space-y-1 [&_ul]:pl-5 [&_ol]:my-2 [&_ol]:list-decimal [&_ol]:space-y-1 [&_ol]:pl-5',
+        '[&_blockquote]:my-2 [&_blockquote]:border-l-2 [&_blockquote]:border-emerald-500 [&_blockquote]:pl-3 [&_blockquote]:italic [&_blockquote]:text-slate-500 dark:[&_blockquote]:text-slate-400',
+        '[&_hr]:my-3 [&_hr]:border-gray-200 dark:[&_hr]:border-gray-700',
+        '[&_table]:my-2 [&_table]:w-full [&_table]:border-collapse [&_th]:border [&_th]:border-gray-200 [&_th]:bg-slate-100 [&_th]:px-2 [&_th]:py-1 [&_th]:text-left [&_th]:font-semibold [&_td]:border [&_td]:border-gray-200 [&_td]:px-2 [&_td]:py-1 dark:[&_th]:border-gray-700 dark:[&_th]:bg-gray-800 dark:[&_td]:border-gray-700',
+        '[&_pre]:my-2 [&_pre]:overflow-x-auto [&_pre]:rounded-lg [&_pre]:bg-slate-100 [&_pre]:p-3 dark:[&_pre]:bg-gray-800',
+        '[&_code]:rounded [&_code]:bg-slate-100 [&_code]:px-1 [&_code]:py-0.5 [&_code]:font-mono [&_code]:text-[0.9em] [&_code]:text-emerald-800 dark:[&_code]:bg-gray-800 dark:[&_code]:text-emerald-300',
+        '[&_pre_code]:bg-transparent [&_pre_code]:p-0',
+        className
+      )}
+    >
+      <ReactMarkdown remarkPlugins={[remarkGfm]}>{content}</ReactMarkdown>
     </div>
   );
 };

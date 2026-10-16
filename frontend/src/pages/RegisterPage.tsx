@@ -4,38 +4,52 @@ import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Kanban, AlertCircle, Sparkles } from 'lucide-react';
+import { Kanban, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export const RegisterPage: React.FC = () => {
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const { register } = useAuth();
   const navigate = useNavigate();
 
+  const nameError =
+    submitted && name.trim().length < 2 ? 'Enter a name with at least 2 characters.' : '';
+  const emailError =
+    submitted && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      ? 'Enter a valid email address.'
+      : '';
+  const passwordError =
+    submitted && password.length < 6 ? 'Use at least 6 characters.' : '';
+  const confirmPasswordError =
+    submitted && password !== confirmPassword ? 'Passwords do not match.' : '';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!name || !email || !password || !confirmPassword) {
-      setError('Please fill in all fields');
-      return;
-    }
-    if (password !== confirmPassword) {
-      setError('Passwords do not match');
-      return;
-    }
-    if (password.length < 6) {
-      setError('Password must be at least 6 characters');
+    setSubmitted(true);
+    setError('');
+
+    const normalizedName = name.trim();
+    const normalizedEmail = email.trim().toLowerCase();
+    if (
+      normalizedName.length < 2 ||
+      !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) ||
+      password.length < 6 ||
+      password !== confirmPassword
+    ) {
       return;
     }
 
     setIsLoading(true);
-    setError('');
 
     try {
-      await register(name, email, password);
+      await register(normalizedName, normalizedEmail, password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Registration failed');
@@ -61,45 +75,106 @@ export const RegisterPage: React.FC = () => {
           </div>
 
           {error && (
-            <div className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 text-xs font-medium rounded-xl border border-rose-500/20 flex items-center gap-2">
+            <div
+              role="alert"
+              aria-live="polite"
+              className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 text-xs font-medium rounded-xl border border-rose-500/20 flex items-center gap-2"
+            >
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <Input
+              id="register-name"
               label="Full Name"
-              placeholder="e.g. Alex Morgan"
+              placeholder="Your name"
+              autoComplete="name"
+              autoCapitalize="words"
               value={name}
-              onChange={(e) => setName(e.target.value)}
+              onChange={(e) => {
+                setName(e.target.value);
+                setError('');
+              }}
+              error={nameError}
               required
             />
 
             <Input
+              id="register-email"
               label="Email address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError('');
+              }}
+              error={emailError}
               required
             />
 
             <Input
+              id="register-password"
               label="Password"
-              type="password"
-              placeholder="•••••••• (min 6 characters)"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Create a password"
+              autoComplete="new-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
+              error={passwordError}
+              helperText={!passwordError ? 'Use at least 6 characters.' : undefined}
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="rounded-md p-1 text-slate-400 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
+              minLength={6}
               required
             />
 
             <Input
+              id="register-confirm-password"
               label="Confirm Password"
-              type="password"
-              placeholder="••••••••"
+              type={showConfirmPassword ? 'text' : 'password'}
+              placeholder="Enter your password again"
+              autoComplete="new-password"
               value={confirmPassword}
-              onChange={(e) => setConfirmPassword(e.target.value)}
+              onChange={(e) => {
+                setConfirmPassword(e.target.value);
+                setError('');
+              }}
+              error={confirmPasswordError}
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((visible) => !visible)}
+                  aria-label={
+                    showConfirmPassword ? 'Hide password confirmation' : 'Show password confirmation'
+                  }
+                  aria-pressed={showConfirmPassword}
+                  className="rounded-md p-1 text-slate-400 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:text-slate-200"
+                >
+                  {showConfirmPassword ? (
+                    <EyeOff className="h-4 w-4" />
+                  ) : (
+                    <Eye className="h-4 w-4" />
+                  )}
+                </button>
+              }
               required
             />
 
@@ -110,7 +185,7 @@ export const RegisterPage: React.FC = () => {
               isLoading={isLoading}
               className="w-full mt-2"
             >
-              Create Free Account
+              {isLoading ? 'Creating account…' : 'Create Account'}
             </Button>
           </form>
 

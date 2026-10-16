@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from '../ui/Modal';
-import { Input, Textarea } from '../ui/Input';
+import { Input } from '../ui/Input';
+import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { Button } from '../ui/Button';
 import { Board } from '../../types';
 import { AlertCircle } from 'lucide-react';
@@ -73,13 +74,22 @@ export const BoardModal: React.FC<BoardModalProps> = ({
           required
         />
 
-        <Textarea
-          label="Description"
-          rows={3}
-          placeholder="Brief summary of the goals and deliverables..."
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+        <div className="space-y-1.5">
+          <label
+            htmlFor="board-description"
+            className="block text-xs font-semibold text-slate-600 dark:text-slate-400"
+          >
+            Description
+          </label>
+          <MarkdownEditor
+            id="board-description"
+            value={description}
+            onChange={setDescription}
+            placeholder="Describe the workspace goals, add links, lists, or useful notes..."
+            rows={6}
+            disabled={isLoading}
+          />
+        </div>
 
         <div className="flex justify-end gap-2.5 pt-4 border-t border-gray-100 dark:border-gray-800">
           <Button

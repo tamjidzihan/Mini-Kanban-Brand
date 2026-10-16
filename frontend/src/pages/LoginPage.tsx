@@ -4,40 +4,42 @@ import { useAuth } from '../context/AuthContext';
 import { Input } from '../components/ui/Input';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
-import { Kanban, AlertCircle, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Kanban, AlertCircle, Eye, EyeOff } from 'lucide-react';
 
 export const LoginPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
   const { login } = useAuth();
   const navigate = useNavigate();
 
+  const emailError =
+    submitted && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(email.trim())
+      ? 'Enter a valid email address.'
+      : '';
+  const passwordError = submitted && !password ? 'Enter your password.' : '';
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (!email || !password) {
-      setError('Please fill in all fields');
+    setSubmitted(true);
+    setError('');
+    const normalizedEmail = email.trim().toLowerCase();
+    if (!/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(normalizedEmail) || !password) {
       return;
     }
-
     setIsLoading(true);
-    setError('');
 
     try {
-      await login(email, password);
+      await login(normalizedEmail, password);
       navigate('/');
     } catch (err: any) {
       setError(err.response?.data?.message || 'Invalid email or password');
     } finally {
       setIsLoading(false);
     }
-  };
-
-  const handleFillDemo = (demoEmail: string) => {
-    setEmail(demoEmail);
-    setPassword('password123');
-    setError('');
   };
 
   return (
@@ -57,28 +59,57 @@ export const LoginPage: React.FC = () => {
           </div>
 
           {error && (
-            <div className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 text-xs font-medium rounded-xl border border-rose-500/20 flex items-center gap-2">
+            <div
+              role="alert"
+              aria-live="polite"
+              className="p-3 bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 text-xs font-medium rounded-xl border border-rose-500/20 flex items-center gap-2"
+            >
               <AlertCircle className="w-4 h-4 shrink-0" />
               <span>{error}</span>
             </div>
           )}
 
-          <form onSubmit={handleSubmit} className="space-y-4">
+          <form onSubmit={handleSubmit} className="space-y-4" noValidate>
             <Input
+              id="login-email"
               label="Email address"
               type="email"
-              placeholder="you@example.com"
+              placeholder="name@example.com"
+              autoComplete="email"
+              autoCapitalize="none"
+              spellCheck={false}
               value={email}
-              onChange={(e) => setEmail(e.target.value)}
+              onChange={(e) => {
+                setEmail(e.target.value);
+                setError('');
+              }}
+              error={emailError}
               required
             />
 
             <Input
+              id="login-password"
               label="Password"
-              type="password"
-              placeholder="••••••••"
+              type={showPassword ? 'text' : 'password'}
+              placeholder="Enter your password"
+              autoComplete="current-password"
               value={password}
-              onChange={(e) => setPassword(e.target.value)}
+              onChange={(e) => {
+                setPassword(e.target.value);
+                setError('');
+              }}
+              error={passwordError}
+              rightElement={
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((visible) => !visible)}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  aria-pressed={showPassword}
+                  className="rounded-md p-1 text-slate-400 hover:text-slate-700 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 dark:hover:text-slate-200"
+                >
+                  {showPassword ? <EyeOff className="h-4 w-4" /> : <Eye className="h-4 w-4" />}
+                </button>
+              }
               required
             />
 
@@ -89,39 +120,9 @@ export const LoginPage: React.FC = () => {
               isLoading={isLoading}
               className="w-full mt-2"
             >
-              Sign In
+              {isLoading ? 'Signing in…' : 'Sign In'}
             </Button>
           </form>
-
-          {/* Quick Demo Credentials */}
-          <div className="pt-4 border-t border-gray-100 dark:border-gray-800 space-y-2">
-            <div className="text-[10px] font-semibold uppercase tracking-wider text-slate-400 text-center">
-              Quick Demo Accounts (password123)
-            </div>
-            <div className="grid grid-cols-3 gap-2">
-              <button
-                type="button"
-                onClick={() => handleFillDemo('alex@example.com')}
-                className="py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-gray-800 hover:bg-emerald-50 dark:hover:bg-emerald-500/10 text-[11px] font-medium text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-gray-700 hover:border-emerald-400 transition-colors"
-              >
-                👑 Owner
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillDemo('sam@example.com')}
-                className="py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-gray-800 hover:bg-sky-50 dark:hover:bg-sky-500/10 text-[11px] font-medium text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-gray-700 hover:border-sky-400 transition-colors"
-              >
-                ✏️ Editor
-              </button>
-              <button
-                type="button"
-                onClick={() => handleFillDemo('taylor@example.com')}
-                className="py-1.5 px-2 rounded-lg bg-slate-50 dark:bg-gray-800 hover:bg-violet-50 dark:hover:bg-violet-500/10 text-[11px] font-medium text-slate-700 dark:text-slate-300 border border-gray-200 dark:border-gray-700 hover:border-violet-400 transition-colors"
-              >
-                👁️ Viewer
-              </button>
-            </div>
-          </div>
 
           <p className="text-center text-xs text-slate-500 dark:text-slate-400">
             Don't have an account?{' '}

@@ -1,6 +1,6 @@
 # Full-Stack Mini Kanban Board Application
 
-A production-grade, collaborative Mini Kanban Board web application built with **React**, **TypeScript**, **Tailwind CSS**, **Node.js**, **Express**, **Prisma ORM**, and **PostgreSQL**.
+A collaborative Mini Kanban Board web application built with **React**, **TypeScript**, **Tailwind CSS**, **Node.js**, **Express**, **Prisma ORM**, and **MariaDB**.
 
 Designed following modern design specifications with dark/light theme support, drag-and-drop task management (`@dnd-kit`), role-based access control (RBAC), and persistent ordering.
 
@@ -15,6 +15,7 @@ Designed following modern design specifications with dark/light theme support, d
 
 - **Board & Collaboration Management**
   - Create, update, and delete Kanban boards.
+  - Write workspace descriptions with Markdown formatting and preview.
   - Share boards with registered users.
   - Role-Based Access Control (RBAC):
     - **Owner**: Full administrative control over board, columns, tasks, and members.
@@ -26,12 +27,14 @@ Designed following modern design specifications with dark/light theme support, d
   - Dynamic drag-and-drop powered by `@dnd-kit`.
   - Reorder tasks within the same column.
   - Move tasks across columns.
-  - Persistent ordering saved directly to PostgreSQL.
+  - Persistent ordering saved directly to MariaDB.
 
 - **Task Features**
   - Rich task details: Title, Description, Priority (LOW, MEDIUM, HIGH, URGENT), Due Date, Assigned User.
   - Visual badges for priority and status.
   - Modal dialogs for task creation and editing.
+- **Profile**
+  - Upload a JPEG, PNG, or WebP profile image (up to 5 MB), or use an image URL.
 
 - **Modern UI / UX (Design System)**
   - Dark and Light mode toggle.
@@ -54,7 +57,7 @@ Designed following modern design specifications with dark/light theme support, d
 ### Backend
 - **Runtime & Framework**: Node.js + Express.js + TypeScript
 - **Database ORM**: Prisma ORM
-- **Database**: PostgreSQL
+- **Database**: MariaDB (MySQL-compatible)
 - **Authentication**: JSON Web Tokens (`jsonwebtoken`)
 - **Validation**: Zod schema validation
 - **Password Security**: `bcryptjs`
@@ -81,9 +84,9 @@ mini_kanban/
 │   ├── tailwind.config.ts
 │   └── vite.config.ts
 ├── backend/              # Node.js + Express + Prisma API
-│   ├── prisma/           # Database schema & seed files
+│   ├── prisma/           # Database schema & migrations
 │   │   ├── schema.prisma
-│   │   └── seed.ts
+│   │   └── migrations/
 │   ├── src/
 │   │   ├── controllers/  # Route handlers (Auth, Board, Column, Task, Member)
 │   │   ├── middlewares/  # Auth & Board access validation middlewares
@@ -92,7 +95,7 @@ mini_kanban/
 │   │   └── server.ts     # Express application entrypoint
 │   ├── package.json
 │   └── tsconfig.json
-├── docker-compose.yml    # Docker setup for Postgres, Backend & Frontend
+├── docker-compose.yml    # Docker setup for MariaDB, Backend & Frontend
 ├── design_react.md       # Design system specification
 ├── README.md             # Project documentation
 └── .gitignore
@@ -105,7 +108,7 @@ mini_kanban/
 ### Prerequisites
 - Node.js (v18 or higher)
 - npm or pnpm or yarn
-- PostgreSQL instance running locally (or via Docker)
+- MariaDB instance running locally (or via Docker)
 
 ### 1. Database & Backend Setup
 
@@ -122,15 +125,16 @@ mini_kanban/
 3. Create a `.env` file in `backend/`:
    ```env
    PORT=5000
-   DATABASE_URL="postgresql://postgres:postgres@localhost:5432/minikanban?schema=public"
+   DATABASE_URL="mysql://kanban:your_local_password@localhost:3306/minikanban"
    JWT_SECRET="super-secret-jwt-key-kanban-2026"
-   CORS_ORIGIN="http://localhost:5173"
+   CORS_ORIGIN="http://localhost:5373"
    ```
 
-4. Run Prisma database migrations & seed test data:
+   Create the `minikanban` database and a dedicated MariaDB user first, and replace `your_local_password` with that user's password.
+
+4. Apply the MariaDB migrations:
    ```bash
-   npx prisma migrate dev --name init
-   npx prisma db seed
+   npx prisma migrate dev
    ```
 
 5. Start the backend development server:
@@ -162,13 +166,13 @@ mini_kanban/
    ```bash
    npm run dev
    ```
-   The frontend runs on `http://localhost:5173`.
+   The frontend runs on `http://localhost:5373`.
 
 ---
 
 ## 🐳 Docker Setup
 
-To run the entire full-stack application with PostgreSQL using Docker Compose:
+To run the entire full-stack application with MariaDB using Docker Compose:
 
 ```bash
 docker-compose up --build
@@ -176,13 +180,17 @@ docker-compose up --build
 
 Access the frontend at `http://localhost:5173` and the API at `http://localhost:5000`.
 
+Compose uses local-development-only default database credentials. Override `DB_USER`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and `DB_NAME` for your environment; do not use the defaults in production.
+
+The MariaDB setup creates a fresh database. Existing PostgreSQL data is not automatically copied or deleted; export and migrate it separately before switching any live deployment.
+
+Uploaded profile images are stored in `backend/uploads/` locally and in the `avatar_uploads` Docker volume when using Compose. Back up that storage alongside the database.
+
 ---
 
-## 🧪 Default Test Credentials (from Seed)
+Create an account through the registration page, then create a board from the dashboard. The project does not ship with demo accounts or sample board data.
 
-- **Email**: `alex@example.com` | **Password**: `password123` (Board Owner)
-- **Email**: `sam@example.com`  | **Password**: `password123` (Board Editor)
-- **Email**: `taylor@example.com` | **Password**: `password123` (Board Viewer)
+See [ROADMAP.md](./ROADMAP.md) for prioritized product and engineering improvements.
 
 ---
 

@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { useQuery } from '@tanstack/react-query';
 import { useAuth } from '../context/AuthContext';
 import { useToast } from '../context/ToastContext';
@@ -14,13 +14,11 @@ import {
   User,
   Lock,
   Mail,
-  ShieldCheck,
-  CheckCircle2,
-  AlertCircle,
   Kanban,
   Users,
   CheckSquare,
   KeyRound,
+  ImagePlus,
 } from 'lucide-react';
 
 export const ProfilePage: React.FC = () => {
@@ -29,6 +27,8 @@ export const ProfilePage: React.FC = () => {
 
   const [name, setName] = useState(user?.name || '');
   const [avatarUrl, setAvatarUrl] = useState(user?.avatarUrl || '');
+  const [avatarFile, setAvatarFile] = useState<File | null>(null);
+  const [avatarPreview, setAvatarPreview] = useState<string | null>(null);
   const [isSavingProfile, setIsSavingProfile] = useState(false);
 
   const [currentPassword, setCurrentPassword] = useState('');
@@ -54,17 +54,47 @@ export const ProfilePage: React.FC = () => {
 
   const stats = meData?.stats || { ownedBoards: 0, memberBoards: 0, assignedTasks: 0 };
 
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarPreview(null);
+      return;
+    }
+
+    const previewUrl = URL.createObjectURL(avatarFile);
+    setAvatarPreview(previewUrl);
+    return () => URL.revokeObjectURL(previewUrl);
+  }, [avatarFile]);
+
+  useEffect(() => {
+    if (!avatarFile) {
+      setAvatarUrl(user?.avatarUrl || '');
+    }
+  }, [avatarFile, user?.avatarUrl]);
+
   const handleUpdateProfile = async (e: React.FormEvent) => {
     e.preventDefault();
     setIsSavingProfile(true);
 
     try {
-      const res = await api.patch('/auth/profile', {
-        name,
-        avatarUrl: avatarUrl.trim() ? avatarUrl.trim() : null,
-      });
+      let payload: FormData | { name: string; avatarUrl: string | null };
+      if (avatarFile) {
+        const formData = new FormData();
+        formData.append('name', name);
+        formData.append('avatar', avatarFile);
+        payload = formData;
+      } else {
+        payload = { name, avatarUrl: avatarUrl.trim() || null };
+      }
+
+      const res = avatarFile
+        ? await api.patch('/auth/profile', payload, {
+            headers: { 'Content-Type': 'multipart/form-data' },
+          })
+        : await api.patch('/auth/profile', payload);
 
       setUser(res.data.user);
+      setAvatarUrl(res.data.user.avatarUrl || '');
+      setAvatarFile(null);
       toast.success('Profile updated successfully.');
       refetchMe();
     } catch (err: any) {
@@ -114,7 +144,7 @@ export const ProfilePage: React.FC = () => {
           <div className="flex flex-col sm:flex-row items-center sm:items-start gap-6 relative z-10">
             <Avatar
               name={user?.name || ''}
-              src={avatarUrl || user?.avatarUrl}
+              src={avatarPreview || avatarUrl || user?.avatarUrl}
               size="lg"
               className="w-20 h-20 text-2xl ring-4 ring-emerald-500/20"
             />
@@ -203,12 +233,59 @@ export const ProfilePage: React.FC = () => {
                 </div>
               </div>
 
-              <Input
-                label="Avatar Image URL (Optional)"
-                value={avatarUrl}
-                onChange={(e) => setAvatarUrl(e.target.value)}
-                placeholder="https://images.unsplash.com/..."
-              />
+              <div className="space-y-2">
+                <label
+                  htmlFor="profile-image"
+                  className="block text-xs font-semibold text-slate-600 dark:text-slate-400"
+                >
+                  Upload profile image
+                </label>
+                <div className="flex flex-col sm:flex-row sm:items-center gap-3">
+                  <input
+                    id="profile-image"
+                    type="file"
+                    accept="image/jpeg,image/png,image/webp"
+                    onChange={(event) => {
+                      const file = event.target.files?.[0];
+                      if (!file) return;
+                      if (!['image/jpeg', 'image/png', 'image/webp'].includes(file.type)) {
+                        toast.error('Choose a JPEG, PNG, or WebP image.');
+                        event.target.value = '';
+                        return;
+                      }
+                      if (file.size > 5 * 1024 * 1024) {
+                        toast.error('Profile image must be 5 MB or smaller.');
+                        event.target.value = '';
+                        return;
+                      }
+                      setAvatarFile(file);
+                      event.currentTarget.value = '';
+                    }}
+                    className="block w-full text-xs text-slate-600 dark:text-slate-400 file:mr-3 file:rounded-lg file:border-0 file:bg-emerald-50 file:px-3 file:py-2 file:text-xs file:font-semibold file:text-emerald-700 hover:file:bg-emerald-100 dark:file:bg-emerald-500/10 dark:file:text-emerald-300"
+                  />
+                  <ImagePlus
+                    className="hidden sm:block w-5 h-5 text-slate-400 shrink-0"
+                    aria-hidden="true"
+                  />
+                </div>
+                {avatarFile && (
+                  <p className="text-[11px] text-slate-600 dark:text-slate-300">
+                    Selected: {avatarFile.name}
+                  </p>
+                )}
+                <p className="text-[11px] text-slate-500 dark:text-slate-400">
+                  JPEG, PNG, or WebP. Maximum file size: 5 MB.
+                </p>
+                <Input
+                  label="Or use an image URL"
+                  value={avatarUrl}
+                  onChange={(event) => {
+                    setAvatarUrl(event.target.value);
+                    setAvatarFile(null);
+                  }}
+                  placeholder="https://example.com/profile.jpg"
+                />
+              </div>
 
               <Button
                 type="submit"

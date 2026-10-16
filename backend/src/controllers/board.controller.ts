@@ -227,8 +227,8 @@ export const searchWorkspace = async (req: Request, res: Response, next: NextFun
       where: {
         id: { in: boardIds },
         OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
+          { title: { contains: q } },
+          { description: { contains: q } },
         ],
       },
       select: {
@@ -245,8 +245,8 @@ export const searchWorkspace = async (req: Request, res: Response, next: NextFun
       where: {
         boardId: { in: boardIds },
         OR: [
-          { title: { contains: q, mode: 'insensitive' } },
-          { description: { contains: q, mode: 'insensitive' } },
+          { title: { contains: q } },
+          { description: { contains: q } },
         ],
       },
       include: {

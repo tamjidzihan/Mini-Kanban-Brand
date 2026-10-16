@@ -1,6 +1,7 @@
 import express from 'express';
 import cors from 'cors';
 import morgan from 'morgan';
+import path from 'node:path';
 import { ENV } from './config/env.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
@@ -17,6 +18,14 @@ app.use(cors({
 }));
 
 app.use(express.json());
+app.use(
+  '/uploads',
+  express.static(path.resolve(process.cwd(), 'uploads'), {
+    dotfiles: 'deny',
+    index: false,
+    maxAge: '1d',
+  })
+);
 
 
 app.get('/', (req, res) => {

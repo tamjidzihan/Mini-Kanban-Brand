@@ -7,12 +7,31 @@ export interface InputProps extends React.InputHTMLAttributes<HTMLInputElement> 
   error?: string;
   leftIcon?: React.ReactNode;
   rightIcon?: React.ReactNode;
+  rightElement?: React.ReactNode;
   helperText?: string;
 }
 
 export const Input = forwardRef<HTMLInputElement, InputProps>(
-  ({ label, error, leftIcon, rightIcon, helperText, className, id, ...props }, ref) => {
+  (
+    {
+      label,
+      error,
+      leftIcon,
+      rightIcon,
+      rightElement,
+      helperText,
+      className,
+      id,
+      'aria-describedby': ariaDescribedBy,
+      'aria-invalid': ariaInvalid,
+      ...props
+    },
+    ref
+  ) => {
     const inputId = id || (label ? label.toLowerCase().replace(/\s+/g, '-') : undefined);
+    const messageId = inputId ? `${inputId}-message` : undefined;
+    const describedBy =
+      [ariaDescribedBy, (error || helperText) && messageId].filter(Boolean).join(' ') || undefined;
 
     return (
       <div className="w-full">
@@ -33,13 +52,15 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
           <input
             id={inputId}
             ref={ref}
+            aria-invalid={error ? true : ariaInvalid}
+            aria-describedby={describedBy}
             className={cn(
               'w-full rounded-lg border text-sm py-2 px-3 transition-colors dark:[color-scheme:dark]',
               'bg-white dark:bg-gray-800 text-slate-900 dark:text-slate-100 placeholder-slate-400 dark:placeholder-slate-500',
               'border-gray-300 dark:border-gray-700',
               'focus:outline-none focus:border-emerald-500 focus:ring-2 focus:ring-emerald-500/40',
               leftIcon && 'pl-9',
-              rightIcon && 'pr-9',
+              (rightIcon || rightElement) && 'pr-10',
               error && 'border-rose-500 focus:border-rose-500 focus:ring-rose-500/30',
               className
             )}
@@ -50,11 +71,18 @@ export const Input = forwardRef<HTMLInputElement, InputProps>(
               {rightIcon}
             </div>
           )}
+          {rightElement && (
+            <div className="absolute right-2 flex items-center">{rightElement}</div>
+          )}
         </div>
         {error ? (
-          <p className="mt-1 text-xs text-rose-600 dark:text-rose-400">{error}</p>
+          <p id={messageId} className="mt-1 text-xs text-rose-600 dark:text-rose-400">
+            {error}
+          </p>
         ) : helperText ? (
-          <p className="mt-1 text-xs text-slate-500 dark:text-slate-400">{helperText}</p>
+          <p id={messageId} className="mt-1 text-xs text-slate-500 dark:text-slate-400">
+            {helperText}
+          </p>
         ) : null}
       </div>
     );

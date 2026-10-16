@@ -1,6 +1,9 @@
 import { Request, Response, NextFunction } from 'express';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { randomUUID } from 'node:crypto';
+import { mkdir, unlink, writeFile } from 'node:fs/promises';
+import path from 'node:path';
 import { prisma } from '../config/db.js';
 import { ENV } from '../config/env.js';
 import {
@@ -148,6 +151,8 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
 };
 
 export const updateProfile = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
+  let uploadedFilePath: string | undefined;
+
   try {
     const userId = req.user?.id;
     if (!userId) {
@@ -156,12 +161,56 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     }
 
     const data = updateProfileSchema.parse(req.body);
+    let avatarUrl = data.avatarUrl;
+
+    const existingUser = await prisma.user.findUnique({
+      where: { id: userId },
+      select: { avatarUrl: true },
+    });
+    if (!existingUser) {
+      res.status(404).json({ message: 'User not found' });
+      return;
+    }
+
+    if (req.file) {
+      const { buffer } = req.file;
+      let extension: string;
+
+      if (buffer.length >= 3 && buffer[0] === 0xff && buffer[1] === 0xd8 && buffer[2] === 0xff) {
+        extension = 'jpg';
+      } else if (
+        buffer.length >= 8 &&
+        buffer.subarray(0, 8).equals(Buffer.from([0x89, 0x50, 0x4e, 0x47, 0x0d, 0x0a, 0x1a, 0x0a]))
+      ) {
+        extension = 'png';
+      } else if (
+        buffer.length >= 12 &&
+        buffer.toString('ascii', 0, 4) === 'RIFF' &&
+        buffer.toString('ascii', 8, 12) === 'WEBP'
+      ) {
+        extension = 'webp';
+      } else {
+        res.status(400).json({ message: 'Choose a valid JPEG, PNG, or WebP image.' });
+        return;
+      }
+
+      const avatarDirectory = path.resolve(process.cwd(), 'uploads', 'avatars');
+      const filename = `${randomUUID()}.${extension}`;
+      uploadedFilePath = path.join(avatarDirectory, filename);
+      await mkdir(avatarDirectory, { recursive: true });
+      await writeFile(uploadedFilePath, buffer, { flag: 'wx' });
+      avatarUrl = `/uploads/avatars/${filename}`;
+    }
 
     const updatedUser = await prisma.user.update({
       where: { id: userId },
       data: {
         ...(data.name && { name: data.name }),
-        ...(data.avatarUrl !== undefined && { avatarUrl: data.avatarUrl || null }),
+        ...(req.file
+          ? { avatarUrl }
+          : data.avatarUrl !== undefined
+            ? { avatarUrl: data.avatarUrl || null }
+            : {}),
       },
       select: {
         id: true,
@@ -172,8 +221,29 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
       },
     });
 
+    if (
+      existingUser.avatarUrl !== updatedUser.avatarUrl &&
+      existingUser.avatarUrl?.startsWith('/uploads/avatars/')
+    ) {
+      const oldFilename = path.basename(existingUser.avatarUrl);
+      if (/^[0-9a-f-]+\.(jpg|png|webp)$/i.test(oldFilename)) {
+        try {
+          await unlink(path.join(process.cwd(), 'uploads', 'avatars', oldFilename));
+        } catch (error) {
+          console.error('Failed to remove replaced profile image:', error);
+        }
+      }
+    }
+
     res.json({ user: updatedUser });
   } catch (error) {
+    if (uploadedFilePath) {
+      try {
+        await unlink(uploadedFilePath);
+      } catch (cleanupError) {
+        console.error('Failed to clean up profile image after update error:', cleanupError);
+      }
+    }
     next(error);
   }
 };
@@ -228,8 +298,8 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
           q
             ? {
                 OR: [
-                  { email: { contains: q, mode: 'insensitive' } },
-                  { name: { contains: q, mode: 'insensitive' } },
+                  { email: { contains: q } },
+                  { name: { contains: q } },
                 ],
               }
             : {},

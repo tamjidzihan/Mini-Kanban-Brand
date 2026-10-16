@@ -145,7 +145,7 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
               <div ref={suggestionsRef} className="flex-1 relative">
                 <Input
                   type="email"
-                  placeholder="Enter email address (e.g. sam@example.com)"
+                  placeholder="Enter email address"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required

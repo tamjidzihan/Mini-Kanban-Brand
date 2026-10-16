@@ -3,7 +3,7 @@ generator client {
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql"
   url      = env("DATABASE_URL")
 }
 
@@ -45,7 +45,7 @@ model User {
 model Board {
   id          String        @id @default(uuid())
   title       String
-  description String?
+  description String?       @db.Text
   ownerId     String
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
@@ -88,7 +88,7 @@ model Column {
 model Task {
   id             String        @id @default(uuid())
   title          String
-  description    String?
+  description    String?       @db.Text
   columnId       String
   boardId        String
   position       Float
@@ -148,7 +148,7 @@ model TaskTag {
 
 model Comment {
   id        String   @id @default(uuid())
-  content   String
+  content   String   @db.Text
   taskId    String
   userId    String
   createdAt DateTime @default(now())
@@ -161,7 +161,7 @@ model Comment {
 model ActivityLog {
   id        String   @id @default(uuid())
   action    String
-  details   String?
+  details   String?  @db.Text
   taskId    String?
   boardId   String
   userId    String
@@ -171,4 +171,3 @@ model ActivityLog {
   board     Board    @relation(fields: [boardId], references: [id], onDelete: Cascade)
   user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
 }
-

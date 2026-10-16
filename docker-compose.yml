@@ -1,18 +1,22 @@
-version: '3.8'
-
 services:
-  postgres:
-    image: postgres:16-alpine
-    container_name: kanban-postgres
-    restart: always
+  mariadb:
+    image: mariadb:11.4
+    container_name: kanban-mariadb
+    restart: unless-stopped
     environment:
-      POSTGRES_USER: postgres
-      POSTGRES_PASSWORD: postgrespassword
-      POSTGRES_DB: minikanban
+      MARIADB_DATABASE: ${DB_NAME:-minikanban}
+      MARIADB_USER: ${DB_USER:-kanban}
+      MARIADB_PASSWORD: ${DB_PASSWORD:-local_dev_only_change_me}
+      MARIADB_ROOT_PASSWORD: ${DB_ROOT_PASSWORD:-local_root_only_change_me}
     ports:
-      - "5432:5432"
+      - "3306:3306"
     volumes:
-      - pgdata:/var/lib/postgresql/data
+      - mariadb_data:/var/lib/mysql
+    healthcheck:
+      test: ["CMD", "healthcheck.sh", "--connect", "--innodb_initialized"]
+      interval: 5s
+      timeout: 5s
+      retries: 20
 
   backend:
     build:
@@ -24,11 +28,14 @@ services:
       - "5000:5000"
     environment:
       PORT: 5000
-      DATABASE_URL: "postgresql://postgres:postgrespassword@postgres:5432/minikanban?schema=public"
+      DATABASE_URL: "mysql://${DB_USER:-kanban}:${DB_PASSWORD:-local_dev_only_change_me}@mariadb:3306/${DB_NAME:-minikanban}"
       JWT_SECRET: "super-secret-jwt-key-kanban-2026"
       CORS_ORIGIN: "http://localhost:5173"
     depends_on:
-      - postgres
+      mariadb:
+        condition: service_healthy
+    volumes:
+      - avatar_uploads:/app/uploads
 
   frontend:
     build:
@@ -42,4 +49,5 @@ services:
       - backend
 
 volumes:
-  pgdata:
+  mariadb_data:
+  avatar_uploads:
