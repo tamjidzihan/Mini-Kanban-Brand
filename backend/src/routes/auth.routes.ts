@@ -9,14 +9,19 @@ import {
 } from '../controllers/auth.controller.js';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
 import { avatarUploadMiddleware } from '../middlewares/avatarUpload.middleware.js';
+import {
+  loginRateLimit,
+  passwordChangeRateLimit,
+  registrationRateLimit,
+} from '../middlewares/rateLimit.middleware.js';
 
 const router = Router();
 
-router.post('/register', register);
-router.post('/login', login);
+router.post('/register', registrationRateLimit, register);
+router.post('/login', loginRateLimit, login);
 router.get('/me', authenticateToken, getMe);
 router.get('/users', authenticateToken, searchUsers);
 router.patch('/profile', authenticateToken, avatarUploadMiddleware, updateProfile);
-router.patch('/change-password', authenticateToken, changePassword);
+router.patch('/change-password', authenticateToken, passwordChangeRateLimit, changePassword);
 
 export default router;

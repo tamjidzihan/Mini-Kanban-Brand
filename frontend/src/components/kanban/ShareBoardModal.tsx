@@ -251,7 +251,6 @@ export const ShareBoardModal: React.FC<ShareBoardModalProps> = ({
                     >
                       <option value="VIEWER">Viewer</option>
                       <option value="EDITOR">Editor</option>
-                      <option value="OWNER">Owner</option>
                     </select>
                   ) : (
                     <Badge variant={getRoleColor(m.role) as any}>{m.role}</Badge>

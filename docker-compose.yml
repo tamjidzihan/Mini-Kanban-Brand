@@ -29,7 +29,7 @@ services:
     environment:
       PORT: 5000
       DATABASE_URL: "mysql://${DB_USER:-kanban}:${DB_PASSWORD:-local_dev_only_change_me}@mariadb:3306/${DB_NAME:-minikanban}"
-      JWT_SECRET: "super-secret-jwt-key-kanban-2026"
+      JWT_SECRET: ${JWT_SECRET:-local-compose-only-secret-replace-before-deploy}
       CORS_ORIGIN: "http://localhost:5173"
     depends_on:
       mariadb:

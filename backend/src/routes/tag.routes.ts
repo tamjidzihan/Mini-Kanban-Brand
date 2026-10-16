@@ -1,5 +1,6 @@
 import { Router } from 'express';
 import { authenticateToken } from '../middlewares/auth.middleware.js';
+import { requireBoardRole } from '../middlewares/boardAccess.middleware.js';
 import {
   getBoardTags,
   createTag,
@@ -12,11 +13,11 @@ const router = Router();
 
 router.use(authenticateToken);
 
-router.get('/:boardId/tags', getBoardTags);
-router.post('/:boardId/tags', createTag);
-router.delete('/tags/:tagId', deleteTag);
+router.get('/:boardId/tags', requireBoardRole(['OWNER', 'EDITOR', 'VIEWER']), getBoardTags);
+router.post('/:boardId/tags', requireBoardRole(['OWNER', 'EDITOR']), createTag);
+router.delete('/tags/:tagId', requireBoardRole(['OWNER', 'EDITOR']), deleteTag);
 
-router.post('/tasks/:taskId/tags/:tagId', assignTagToTask);
-router.delete('/tasks/:taskId/tags/:tagId', removeTagFromTask);
+router.post('/tasks/:taskId/tags/:tagId', requireBoardRole(['OWNER', 'EDITOR']), assignTagToTask);
+router.delete('/tasks/:taskId/tags/:tagId', requireBoardRole(['OWNER', 'EDITOR']), removeTagFromTask);
 
 export default router;

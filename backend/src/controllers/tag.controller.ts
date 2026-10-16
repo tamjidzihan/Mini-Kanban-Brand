@@ -75,6 +75,10 @@ export const assignTagToTask = async (req: Request, res: Response, next: NextFun
       res.status(404).json({ message: 'Task or Tag not found' });
       return;
     }
+    if (task.boardId !== tag.boardId) {
+      res.status(400).json({ message: 'Task and tag must belong to the same workspace' });
+      return;
+    }
 
     const taskTag = await (prisma as any).taskTag.upsert({
       where: {

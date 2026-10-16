@@ -55,8 +55,8 @@ export const acceptInvitation = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    if (invitation.status === 'ACCEPTED') {
-      res.status(400).json({ message: 'Invitation has already been accepted' });
+    if (invitation.status !== 'PENDING') {
+      res.status(400).json({ message: 'Invitation is no longer pending' });
       return;
     }
 

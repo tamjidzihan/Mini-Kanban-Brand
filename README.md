@@ -74,7 +74,7 @@ cd backend
 npm install
 ```
 
-Create `backend/.env`:
+Copy `backend/.env.example` to `backend/.env` and set a unique random `JWT_SECRET` of at least 32 characters and the database user's password:
 
 ```env
 PORT=5000
@@ -103,7 +103,7 @@ cd frontend
 npm install
 ```
 
-Optionally create `frontend/.env` to set the API URL:
+Optionally copy `frontend/.env.example` to `frontend/.env` to set the API URL:
 
 ```env
 VITE_API_BASE_URL="http://localhost:5000/api"
@@ -146,8 +146,10 @@ The app does not ship with demo accounts or sample records. Register an account 
 ## Builds
 
 ```powershell
+npm --prefix backend test
 npm --prefix frontend run build
 npm --prefix backend run build
+Push-Location backend; npx prisma validate; Pop-Location
 ```
 
 See [ROADMAP.md](./ROADMAP.md) for proposed product and engineering improvements.

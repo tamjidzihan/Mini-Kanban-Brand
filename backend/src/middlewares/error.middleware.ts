@@ -17,8 +17,11 @@ export const errorHandler = (
     return;
   }
 
-  const statusCode = err.statusCode || 500;
-  const message = err.message || 'Internal Server Error';
+  const statusCode =
+    Number.isInteger(err.statusCode) && err.statusCode >= 400 && err.statusCode < 500
+      ? err.statusCode
+      : 500;
+  const message = statusCode === 500 ? 'Internal Server Error' : err.message || 'Request failed';
 
   res.status(statusCode).json({ message });
 };

@@ -23,11 +23,11 @@ export const updateBoardSchema = z.object({
 
 export const addMemberSchema = z.object({
   email: z.string().email('Invalid email address'),
-  role: z.enum(['OWNER', 'EDITOR', 'VIEWER']).default('VIEWER'),
+  role: z.enum(['EDITOR', 'VIEWER']).default('VIEWER'),
 });
 
 export const updateMemberRoleSchema = z.object({
-  role: z.enum(['OWNER', 'EDITOR', 'VIEWER']),
+  role: z.enum(['EDITOR', 'VIEWER']),
 });
 
 export const createColumnSchema = z.object({
@@ -40,7 +40,7 @@ export const updateColumnSchema = z.object({
 });
 
 export const reorderColumnsSchema = z.object({
-  columnIds: z.array(z.string().uuid()),
+  columnIds: z.array(z.string().uuid()).min(1),
 });
 
 export const createTaskSchema = z.object({
@@ -66,7 +66,16 @@ export const updateTaskSchema = z.object({
 
 export const moveTaskSchema = z.object({
   targetColumnId: z.string().uuid('Invalid target column ID'),
-  targetPosition: z.number().min(0, 'Position must be 0 or greater'),
+  targetIndex: z.number().int().min(0).optional(),
+  taskIdsOrder: z.array(z.string().uuid()).min(1).optional(),
+}).superRefine((data, context) => {
+  if (data.taskIdsOrder && new Set(data.taskIdsOrder).size !== data.taskIdsOrder.length) {
+    context.addIssue({
+      code: z.ZodIssueCode.custom,
+      message: 'Task order cannot contain duplicate IDs',
+      path: ['taskIdsOrder'],
+    });
+  }
 });
 
 export const updateProfileSchema = z.object({

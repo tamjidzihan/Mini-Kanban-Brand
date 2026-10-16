@@ -6,6 +6,7 @@ export const requireBoardRole = (allowedRoles: Role[]) => {
   return async (req: Request, res: Response, next: NextFunction): Promise<void> => {
     try {
       const userId = req.user?.id;
+      const body = req.body ?? {};
       if (!userId) {
         res.status(401).json({ message: 'Unauthorized' });
         return;
@@ -38,8 +39,64 @@ export const requireBoardRole = (allowedRoles: Role[]) => {
         boardId = task.boardId;
       }
 
-      if (!boardId && req.body.boardId) {
-        boardId = req.body.boardId as string;
+      if (!boardId && req.params.subtaskId) {
+        const subtask = await prisma.subtask.findUnique({
+          where: { id: req.params.subtaskId as string },
+          select: { task: { select: { boardId: true } } },
+        });
+        if (!subtask) {
+          res.status(404).json({ message: 'Subtask not found' });
+          return;
+        }
+        boardId = subtask.task.boardId;
+      }
+
+      if (!boardId && req.params.commentId) {
+        const comment = await prisma.comment.findUnique({
+          where: { id: req.params.commentId as string },
+          select: { task: { select: { boardId: true } } },
+        });
+        if (!comment) {
+          res.status(404).json({ message: 'Comment not found' });
+          return;
+        }
+        boardId = comment.task.boardId;
+      }
+
+      if (!boardId && req.params.tagId) {
+        const tag = await prisma.tag.findUnique({
+          where: { id: req.params.tagId as string },
+          select: { boardId: true },
+        });
+        if (!tag) {
+          res.status(404).json({ message: 'Tag not found' });
+          return;
+        }
+        boardId = tag.boardId;
+      }
+
+      if (!boardId && body.boardId) {
+        boardId = body.boardId as string;
+      }
+
+      if (
+        !boardId &&
+        Array.isArray(body.columnIds) &&
+        body.columnIds.length > 0 &&
+        body.columnIds.every(
+          (id: unknown) => typeof id === 'string' && /^[0-9a-f-]{36}$/i.test(id)
+        )
+      ) {
+        const columns = await prisma.column.findMany({
+          where: { id: { in: body.columnIds } },
+          select: { boardId: true },
+        });
+        const boardIds = new Set(columns.map((column) => column.boardId));
+        if (columns.length !== body.columnIds.length || boardIds.size !== 1) {
+          res.status(400).json({ message: 'Columns must all belong to the same workspace' });
+          return;
+        }
+        boardId = columns[0].boardId;
       }
 
       if (!boardId) {
@@ -80,7 +137,7 @@ export const requireBoardRole = (allowedRoles: Role[]) => {
         return;
       }
 
-      req.boardMember = { role: userRole };
+      req.boardMember = { role: userRole, boardId };
       next();
     } catch (error) {
       next(error);

@@ -107,6 +107,15 @@ export const updateMemberRole = async (req: Request, res: Response, next: NextFu
       return;
     }
 
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+      select: { ownerId: true },
+    });
+    if (board?.ownerId === member.userId) {
+      res.status(400).json({ message: 'Workspace owner role is managed through ownership transfer' });
+      return;
+    }
+
     const updated = await prisma.boardMember.update({
       where: { id: memberId },
       data: { role: data.role },
@@ -132,6 +141,15 @@ export const removeMember = async (req: Request, res: Response, next: NextFuncti
 
     if (!member || member.boardId !== boardId) {
       res.status(404).json({ message: 'Board member not found' });
+      return;
+    }
+
+    const board = await prisma.board.findUnique({
+      where: { id: boardId },
+      select: { ownerId: true },
+    });
+    if (board?.ownerId === member.userId) {
+      res.status(400).json({ message: 'Transfer workspace ownership before removing the owner' });
       return;
     }
 
@@ -199,4 +217,3 @@ export const leaveBoard = async (req: Request, res: Response, next: NextFunction
     next(error);
   }
 };
-

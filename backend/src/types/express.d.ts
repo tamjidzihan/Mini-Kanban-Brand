@@ -10,6 +10,7 @@ declare global {
       };
       boardMember?: {
         role: Role;
+        boardId: string;
       };
     }
   }

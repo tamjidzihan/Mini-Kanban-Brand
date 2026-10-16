@@ -43,6 +43,9 @@ const PORT = parseInt(ENV.PORT, 10) || 5000;
 // Connect to database first, then start server
 const startServer = async () => {
   try {
+    if (!ENV.JWT_SECRET || ENV.JWT_SECRET.length < 32) {
+      throw new Error('JWT_SECRET must be configured with at least 32 characters');
+    }
     await connectDB(); // Connect to MySQL
     app.listen(PORT, () => {
       console.log(`✅ Mini Kanban API Server running on http://localhost:${PORT}`);
