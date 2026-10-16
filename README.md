@@ -1,199 +1,153 @@
-# Full-Stack Mini Kanban Board Application
+# Mini Kanban
 
-A collaborative Mini Kanban Board web application built with **React**, **TypeScript**, **Tailwind CSS**, **Node.js**, **Express**, **Prisma ORM**, and **MariaDB**.
+A collaborative Kanban task-management app built with React, TypeScript, Express, Prisma, and MariaDB. Create workspaces, organize tasks, and collaborate with role-based permissions.
 
-Designed following modern design specifications with dark/light theme support, drag-and-drop task management (`@dnd-kit`), role-based access control (RBAC), and persistent ordering.
+## Features
 
----
+- Register and sign in with JWT authentication.
+- Create and manage workspaces and workflow columns.
+- Drag and drop tasks between columns, with ordering persisted to the database.
+- Share workspaces with **Owner**, **Editor**, and **Viewer** roles.
+- Track task descriptions, priority, due dates, assignees, tags, subtasks, comments, and activity.
+- Switch between Kanban, list, calendar, and analytics views.
+- Write and preview Markdown in workspace descriptions.
+- Upload JPEG, PNG, or WebP profile images up to 5 MB, or provide an image URL.
+- Use responsive layouts and light, dark, or system theme preferences.
 
-## 🚀 Features
+## Tech stack
 
-- **Authentication & Security**
-  - User registration & login with JWT authentication.
-  - Password hashing using `bcryptjs`.
-  - Protected API routes and client-side page guards.
+| Area | Technologies |
+| --- | --- |
+| Frontend | React 19, TypeScript, Vite, Tailwind CSS, React Router 6 |
+| Data and drag-and-drop | TanStack Query, Axios, `@dnd-kit` |
+| Markdown | `react-markdown`, `remark-gfm` |
+| Backend | Node.js, Express, TypeScript, Zod |
+| Database | MariaDB 11.4, Prisma 6 |
+| Authentication | JWT, bcryptjs |
+| Local orchestration | Docker Compose |
 
-- **Board & Collaboration Management**
-  - Create, update, and delete Kanban boards.
-  - Write workspace descriptions with Markdown formatting and preview.
-  - Share boards with registered users.
-  - Role-Based Access Control (RBAC):
-    - **Owner**: Full administrative control over board, columns, tasks, and members.
-    - **Editor**: Can manage columns, tasks, and task movements.
-    - **Viewer**: Read-only access to view boards and tasks.
-
-- **Kanban Board & Drag-and-Drop**
-  - Create, edit, and delete columns.
-  - Dynamic drag-and-drop powered by `@dnd-kit`.
-  - Reorder tasks within the same column.
-  - Move tasks across columns.
-  - Persistent ordering saved directly to MariaDB.
-
-- **Task Features**
-  - Rich task details: Title, Description, Priority (LOW, MEDIUM, HIGH, URGENT), Due Date, Assigned User.
-  - Visual badges for priority and status.
-  - Modal dialogs for task creation and editing.
-- **Profile**
-  - Upload a JPEG, PNG, or WebP profile image (up to 5 MB), or use an image URL.
-
-- **Modern UI / UX (Design System)**
-  - Dark and Light mode toggle.
-  - Custom Tailwind design system tokens.
-  - Responsive sidebar and navigation shell.
-  - Loading skeletons, empty states, and toast notifications.
-
----
-
-## 🛠️ Tech Stack
-
-### Frontend
-- **Framework**: React 19 + TypeScript (Vite)
-- **Styling**: Tailwind CSS + `clsx` + `tailwind-merge`
-- **Routing**: React Router v7
-- **Data Fetching & State**: TanStack Query (React Query v5) + Axios
-- **Drag & Drop**: `@dnd-kit/core`, `@dnd-kit/sortable`, `@dnd-kit/utilities`
-- **Icons**: Lucide React (`lucide-react`)
-
-### Backend
-- **Runtime & Framework**: Node.js + Express.js + TypeScript
-- **Database ORM**: Prisma ORM
-- **Database**: MariaDB (MySQL-compatible)
-- **Authentication**: JSON Web Tokens (`jsonwebtoken`)
-- **Validation**: Zod schema validation
-- **Password Security**: `bcryptjs`
-
-### DevOps & Containerization
-- Docker & Docker Compose
-
----
-
-## 📁 Repository Structure
+## Repository layout
 
 ```text
 mini_kanban/
-├── frontend/             # React + Vite + Tailwind CSS app
-│   ├── src/
-│   │   ├── components/   # UI & Kanban components
-│   │   ├── context/      # Auth & Theme context providers
-│   │   ├── hooks/        # Custom React & React Query hooks
-│   │   ├── lib/          # Axios instance & utility functions
-│   │   ├── pages/        # Application views (Dashboard, Board, Auth)
-│   │   └── types/        # TypeScript interfaces & types
-│   ├── index.html
-│   ├── package.json
-│   ├── tailwind.config.ts
-│   └── vite.config.ts
-├── backend/              # Node.js + Express + Prisma API
-│   ├── prisma/           # Database schema & migrations
-│   │   ├── schema.prisma
-│   │   └── migrations/
-│   ├── src/
-│   │   ├── controllers/  # Route handlers (Auth, Board, Column, Task, Member)
-│   │   ├── middlewares/  # Auth & Board access validation middlewares
-│   │   ├── routes/       # API router endpoints
-│   │   ├── schemas/      # Zod validation schemas
-│   │   └── server.ts     # Express application entrypoint
-│   ├── package.json
-│   └── tsconfig.json
-├── docker-compose.yml    # Docker setup for MariaDB, Backend & Frontend
-├── design_react.md       # Design system specification
-├── README.md             # Project documentation
-└── .gitignore
+├── frontend/
+│   └── src/
+│       ├── components/    # Kanban, layout, auth, and shared UI
+│       ├── context/       # Auth, theme, and toast providers
+│       ├── hooks/         # Shared React hooks
+│       ├── lib/           # API client and utilities
+│       └── pages/         # Dashboard, board, auth, and profile screens
+├── backend/
+│   ├── prisma/            # MariaDB schema and migrations
+│   └── src/
+│       ├── config/        # Environment and database setup
+│       ├── controllers/   # API handlers
+│       ├── middlewares/   # Authentication, access control, uploads
+│       ├── routes/        # REST API routes
+│       └── schemas/       # Zod request validation
+├── docker-compose.yml
+├── ROADMAP.md
+└── README.md
 ```
 
----
+## Run locally
 
-## 🚦 Getting Started (Local Development)
+### Requirements
 
-### Prerequisites
-- Node.js (v18 or higher)
-- npm or pnpm or yarn
-- MariaDB instance running locally (or via Docker)
+- Node.js 20 or later and npm
+- MariaDB 11.4 or a compatible MySQL server
 
-### 1. Database & Backend Setup
+### 1. Create a MariaDB database and user
 
-1. Navigate to the backend folder:
-   ```bash
-   cd backend
-   ```
+Connect to MariaDB as an administrator and run SQL like the following, changing the password to a strong local value:
 
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in `backend/`:
-   ```env
-   PORT=5000
-   DATABASE_URL="mysql://kanban:your_local_password@localhost:3306/minikanban"
-   JWT_SECRET="super-secret-jwt-key-kanban-2026"
-   CORS_ORIGIN="http://localhost:5373"
-   ```
-
-   Create the `minikanban` database and a dedicated MariaDB user first, and replace `your_local_password` with that user's password.
-
-4. Apply the MariaDB migrations:
-   ```bash
-   npx prisma migrate dev
-   ```
-
-5. Start the backend development server:
-   ```bash
-   npm run dev
-   ```
-   The backend runs on `http://localhost:5000`.
-
----
-
-### 2. Frontend Setup
-
-1. Open a new terminal and navigate to the frontend folder:
-   ```bash
-   cd frontend
-   ```
-
-2. Install dependencies:
-   ```bash
-   npm install
-   ```
-
-3. Create a `.env` file in `frontend/`:
-   ```env
-   VITE_API_BASE_URL="http://localhost:5000/api"
-   ```
-
-4. Start the frontend Vite server:
-   ```bash
-   npm run dev
-   ```
-   The frontend runs on `http://localhost:5373`.
-
----
-
-## 🐳 Docker Setup
-
-To run the entire full-stack application with MariaDB using Docker Compose:
-
-```bash
-docker-compose up --build
+```sql
+CREATE DATABASE minikanban CHARACTER SET utf8mb4 COLLATE utf8mb4_unicode_ci;
+CREATE USER 'kanban'@'localhost' IDENTIFIED BY 'replace-with-a-strong-password';
+GRANT ALL PRIVILEGES ON minikanban.* TO 'kanban'@'localhost';
 ```
 
-Access the frontend at `http://localhost:5173` and the API at `http://localhost:5000`.
+### 2. Configure and start the backend
 
-Compose uses local-development-only default database credentials. Override `DB_USER`, `DB_PASSWORD`, `DB_ROOT_PASSWORD`, and `DB_NAME` for your environment; do not use the defaults in production.
+```powershell
+cd backend
+npm install
+```
 
-The MariaDB setup creates a fresh database. Existing PostgreSQL data is not automatically copied or deleted; export and migrate it separately before switching any live deployment.
+Create `backend/.env`:
 
-Uploaded profile images are stored in `backend/uploads/` locally and in the `avatar_uploads` Docker volume when using Compose. Back up that storage alongside the database.
+```env
+PORT=5000
+DATABASE_URL="mysql://kanban:replace-with-a-strong-password@localhost:3306/minikanban"
+JWT_SECRET="replace-with-a-long-random-secret"
+CORS_ORIGIN="http://localhost:5373"
+```
 
----
+If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
 
-Create an account through the registration page, then create a board from the dashboard. The project does not ship with demo accounts or sample board data.
+Apply the checked-in migrations and start the API:
 
-See [ROADMAP.md](./ROADMAP.md) for prioritized product and engineering improvements.
+```powershell
+npx prisma migrate dev
+npm run dev
+```
 
----
+The API runs at `http://localhost:5000`.
 
-## 📜 License
+### 3. Start the frontend
 
-This project is open-source under the MIT License.
+In another terminal:
+
+```powershell
+cd frontend
+npm install
+```
+
+Optionally create `frontend/.env` to set the API URL:
+
+```env
+VITE_API_BASE_URL="http://localhost:5000/api"
+```
+
+Start Vite:
+
+```powershell
+npm run dev
+```
+
+The development frontend runs at `http://localhost:5373`.
+
+## Run with Docker Compose
+
+From the repository root:
+
+```powershell
+docker compose up --build
+```
+
+Compose starts MariaDB, applies Prisma migrations when the backend container starts, and serves the frontend and API at:
+
+- Frontend: `http://localhost:5173`
+- API: `http://localhost:5000`
+- MariaDB: `localhost:3306`
+
+Compose provides local-development-only defaults for the database user and passwords. Override `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DB_ROOT_PASSWORD` in the environment before starting it. Change the development JWT secret in `docker-compose.yml` before using this configuration beyond local development. Never use development defaults in production.
+
+## Database and uploaded images
+
+The Prisma schema and MariaDB migration are in `backend/prisma/`. For an already-running deployment, use `npx prisma migrate deploy` to apply pending migrations; use `npx prisma migrate dev` for local schema development.
+
+This project now targets MariaDB. Existing PostgreSQL data is not automatically copied, migrated, or deleted. Plan and verify a separate data migration before switching any deployment that contains data.
+
+Uploaded profile images are stored in `backend/uploads/` during local development and in the `avatar_uploads` Docker volume under Compose. Back up image storage as well as the database.
+
+The app does not ship with demo accounts or sample records. Register an account and create a workspace to get started.
+
+## Builds
+
+```powershell
+npm --prefix frontend run build
+npm --prefix backend run build
+```
+
+See [ROADMAP.md](./ROADMAP.md) for proposed product and engineering improvements.
