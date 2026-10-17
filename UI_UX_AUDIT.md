@@ -18,8 +18,8 @@ Asana is a workflow reference only; its visual identity is not a target.
 | P1 | Task creation | The create/edit task form did not focus its primary field when opened. | Fixed: task title receives initial focus in the shared modal. |
 | P1 | Dashboard utility | The dashboard primarily summarizes workspace/task counts and lists workspaces; it does not surface a user's assigned tasks or upcoming/overdue work. | Open: the current API does not expose a cross-workspace task feed; do not fake these records. |
 | P1 | Unsaved form changes | Clicking the modal backdrop can dismiss forms, and task forms do not warn before discarding edits. | Open: define a reusable dirty-form confirmation pattern and apply only to forms with unsaved changes. |
-| P1 | Task editing feedback | The task detail panel saves several fields on blur/change, but saving is not consistently communicated and rapid edits can overlap. | Open: standardize save state and error recovery without changing API semantics. |
-| P1 | Responsive task detail | The task detail panel has responsive width/height constraints but dense sections and interactions need validation at mobile widths. | Open: review in browser at narrow widths and simplify/progressively disclose secondary sections if needed. |
+| P1 | Task editing feedback | The task detail panel saves several fields on blur/change, but saving is not consistently communicated and rapid edits can overlap. | Partially fixed: expose pending saves and use explicit description Save/Cancel with discard protection; field-specific recovery and rapid-edit verification remain open. |
+| P1 | Responsive task detail | The task detail panel has responsive width/height constraints but dense sections and interactions need validation at mobile widths. | Partially fixed: compact aligned properties, checklist, description, and feed; desktop/tablet/mobile visual validation remains open. |
 | P1 | Mobile navigation accessibility | The mobile sidebar behaves as a drawer visually, but does not expose dialog semantics or manage focus while open. | Open: add labeled drawer semantics, initial focus, Escape handling, focus containment, and focus return. |
 | P2 | Collapsed navigation | Dashboard and profile icons had no accessible names/tooltips when the desktop sidebar was collapsed. | Fixed: provide accessible names and native tooltips for those links; workspace links already expose their names. |
 | P2 | Board navigation | Board view/filter actions share a dense header; active filters and reset are available, but toolbar grouping and narrow-screen scanability need review. | Open: consolidate presentation while preserving all current filters and view actions. |
@@ -47,6 +47,9 @@ Asana is a workflow reference only; its visual identity is not a target.
 - [x] Remove the unsupported static verified-account badge.
 - [x] Make global search errors visible/retryable and align search copy with the backend.
 - [x] Make List view sorting and task opening keyboard-operable.
+- [x] Redesign task detail hierarchy with compact properties, a lightweight checklist, and distinct Discussion/Activity tabs.
+- [x] Add task-panel dialog semantics, focus containment/restoration, Escape handling, and reduced-motion support.
+- [x] Require explicit description Save/Cancel and protect unsaved description edits when closing or deleting.
 - [ ] Review all icon-only controls, mobile drawer focus behavior, and shared form feedback.
 
 ### Phase 3 — Core workflows
@@ -70,8 +73,10 @@ Asana is a workflow reference only; its visual identity is not a target.
 
 ## Current phase notes
 
-The first foundation pass is intentionally limited to shared dialog keyboard
-accessibility, task-form focus, and collapsed-navigation labeling. Dashboard
-task feeds and additional cross-workspace workflows require backend/API support;
-this audit does not recommend client-side mock data or a backend rewrite solely
-to imitate another product.
+The task-detail sidebar now uses compact property rows, explicit description
+save/cancel controls, and accessible Discussion/Activity tabs while preserving
+the existing task APIs and role checks. Browser verification at desktop, tablet,
+and mobile widths remains outstanding. Dashboard task feeds and additional
+cross-workspace workflows require backend/API support; this audit does not
+recommend client-side mock data or a backend rewrite solely to imitate another
+product.
