@@ -51,7 +51,7 @@ export const LoginPage: React.FC = () => {
               <Kanban className="w-7 h-7" />
             </div>
             <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center justify-center gap-1.5">
-              <span>Sign in to Mini Kanban</span>
+              <span>Sign in to Taskgrid</span>
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">
               Collaborative workspaces, drag-and-drop boards & permissions.

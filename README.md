@@ -1,4 +1,4 @@
-# Mini Kanban
+# Taskgrid
 
 A collaborative Kanban task-management app built with React, TypeScript, Express, Prisma, and MariaDB. Create workspaces, organize tasks, and collaborate with role-based permissions.
 
@@ -22,7 +22,7 @@ A collaborative Kanban task-management app built with React, TypeScript, Express
 | Data and drag-and-drop | TanStack Query, Axios, `@dnd-kit` |
 | Markdown | `react-markdown`, `remark-gfm` |
 | Backend | Node.js, Express, TypeScript, Zod |
-| Database | MariaDB 11.4, Prisma 6 |
+| Database | MariaDB 11.4, Prisma 7 |
 | Authentication | JWT, bcryptjs |
 | Local orchestration | Docker Compose |
 
@@ -54,7 +54,7 @@ mini_kanban/
 
 ### Requirements
 
-- Node.js 20 or later and npm
+- Node.js 20.19+, 22.12+, or 24+ and npm
 - MariaDB 11.4 or a compatible MySQL server
 
 ### 1. Create a MariaDB database and user
@@ -83,7 +83,7 @@ JWT_SECRET="replace-with-a-long-random-secret"
 CORS_ORIGIN="http://localhost:5373"
 ```
 
-If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
+Prisma reads `DATABASE_URL` from `backend/.env` through `prisma.config.ts` for migrations. The application uses that same setting to configure Prisma's MariaDB driver adapter. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
 
 Apply the checked-in migrations and start the API:
 

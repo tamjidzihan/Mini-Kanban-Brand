@@ -1,13 +1,14 @@
+import { PrismaMariaDb } from '@prisma/adapter-mariadb';
 import { PrismaClient } from '@prisma/client';
 import { ENV } from './env.js';
+import { parseDatabaseUrl } from './parseDatabaseUrl.js';
 
-export const prisma = new PrismaClient({
-  datasources: {
-    db: {
-      url: ENV.DATABASE_URL,
-    },
-  },
+const adapter = new PrismaMariaDb({
+  ...parseDatabaseUrl(ENV.DATABASE_URL),
+  connectionLimit: 10,
 });
+
+export const prisma = new PrismaClient({ adapter });
 
 export const connectDB = async () => {
   try {

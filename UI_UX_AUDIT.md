@@ -1,4 +1,4 @@
-# Mini Kanban UI/UX Audit
+# Taskgrid UI/UX Audit
 
 ## Scope and design constraints
 

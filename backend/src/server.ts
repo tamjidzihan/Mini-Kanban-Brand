@@ -29,7 +29,7 @@ app.use(
 
 
 app.get('/', (req, res) => {
-  res.status(200).json({ message: 'Welcome to the Mini Kanban API!' });
+  res.status(200).json({ message: 'Welcome to the Taskgrid API!' });
 });
 
 // App API routes
@@ -48,7 +48,7 @@ const startServer = async () => {
     }
     await connectDB(); // Connect to MySQL
     app.listen(PORT, () => {
-      console.log(`✅ Mini Kanban API Server running on http://localhost:${PORT}`);
+      console.log(`✅ Taskgrid API Server running on http://localhost:${PORT}`);
     });
   } catch (error) {
     console.error('❌ Failed to start server:', error);

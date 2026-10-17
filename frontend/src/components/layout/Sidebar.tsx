@@ -57,7 +57,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed && (
             <div className="flex flex-col min-w-0">
               <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-1.5 truncate">
-                Mini Kanban
+                Taskgrid
               </span>
               <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
                 Project Workspaces

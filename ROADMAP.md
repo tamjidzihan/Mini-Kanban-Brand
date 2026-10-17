@@ -1,4 +1,4 @@
-# Mini Kanban Product Roadmap
+# Taskgrid Product Roadmap
 
 This roadmap tracks the current implementation against the goal of a cohesive, secure work-management product. Status is based on the repository audit on 2026-10-17. “Implemented” means present in the application; it does not imply broad automated workflow coverage.
 
