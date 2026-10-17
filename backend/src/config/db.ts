@@ -1,5 +1,5 @@
 import { PrismaMariaDb } from '@prisma/adapter-mariadb';
-import { PrismaClient } from '@prisma/client';
+import { PrismaClient } from '../../generated/prisma/index.js';
 import { ENV } from './env.js';
 import { parseDatabaseUrl } from './parseDatabaseUrl.js';
 

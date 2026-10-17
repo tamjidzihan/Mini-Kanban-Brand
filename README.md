@@ -83,7 +83,7 @@ JWT_SECRET="replace-with-a-long-random-secret"
 CORS_ORIGIN="http://localhost:5373"
 ```
 
-Prisma reads `DATABASE_URL` from `backend/.env` through `prisma.config.ts` for migrations. The application uses that same setting to configure Prisma's MariaDB driver adapter. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
+Prisma reads `DATABASE_URL` from `backend/.env` through `prisma.config.ts` for migrations. The application uses that same setting to configure Prisma's MariaDB driver adapter. Generate the app-local Prisma Client with `npm run prisma:generate`; `npm run build` runs generation automatically before compiling. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
 
 Apply the checked-in migrations and start the API:
 
@@ -140,6 +140,27 @@ The Prisma schema and MariaDB migration are in `backend/prisma/`. For an already
 This project now targets MariaDB. Existing PostgreSQL data is not automatically copied, migrated, or deleted. Plan and verify a separate data migration before switching any deployment that contains data.
 
 Uploaded profile images are stored in `backend/uploads/` during local development and in the `avatar_uploads` Docker volume under Compose. Back up image storage as well as the database.
+
+### Deploying the backend on cPanel
+
+Build locally from the backend directory before uploading:
+
+```powershell
+cd backend
+npm ci
+npm run build
+```
+
+Upload the application files to the cPanel Node.js Application Root, including
+`dist/`, `generated/`, `prisma/`, `prisma.config.ts`, `package.json`, and
+`package-lock.json`. Then install the production dependencies using cPanel's
+Node.js application interface and restart the app. The generated Prisma Client
+is stored in `generated/prisma/` and imported from the application, rather than
+being expected under cPanel's separate Node virtual environment.
+
+Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, and `NODE_ENV=production` in
+the cPanel application environment. Back up the database and inspect pending
+migrations before asking the host to apply them.
 
 The app does not ship with demo accounts or sample records. Register an account and create a workspace to get started.
 

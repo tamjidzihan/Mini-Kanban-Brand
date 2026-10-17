@@ -25,6 +25,7 @@ build/
 # Prisma outputs
 prisma/*.db
 prisma/*.db-journal
+/backend/generated/
 
 # Database logs / Docker data
 mariadb_data/
