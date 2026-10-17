@@ -59,18 +59,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
     return { total, completed, rate };
   }, [allTasks]);
 
-  // Time tracking metrics
-  const timeStats = useMemo(() => {
-    let totalLoggedMins = 0;
-    let totalEstHours = 0;
-    allTasks.forEach((t) => {
-      if (t.loggedMinutes) totalLoggedMins += t.loggedMinutes;
-      if (t.estimatedHours) totalEstHours += t.estimatedHours;
-    });
-    const loggedHours = Math.round((totalLoggedMins / 60) * 10) / 10;
-    return { loggedMinutes: totalLoggedMins, loggedHours, estHours: totalEstHours };
-  }, [allTasks]);
-
   // Tag distribution
   const tagCounts = useMemo(() => {
     const map: Record<string, { name: string; color: string; count: number }> = {};
@@ -287,13 +275,13 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
           </div>
         </Card>
 
-        {/* Time Tracking & Subtask Velocity */}
+        {/* Subtask progress and tag distribution */}
         <Card className="p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
             <div className="flex items-center gap-2">
               <TrendingUp className="w-4 h-4 text-violet-600" />
               <h3 className="text-sm font-semibold text-slate-900 dark:text-slate-100">
-                Subtasks & Time Velocity
+                Subtask Progress
               </h3>
             </div>
           </div>
@@ -307,28 +295,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
                 </span>
               </div>
               <ProgressBar value={subtaskStats.completed} max={subtaskStats.total || 1} tone="emerald" />
-            </div>
-
-            <div className="grid grid-cols-2 gap-3">
-              <div className="p-3 rounded-xl bg-emerald-50/60 dark:bg-emerald-950/20 border border-emerald-100 dark:border-emerald-900/40">
-                <div className="text-[11px] font-semibold text-emerald-700 dark:text-emerald-400">Total Logged Time</div>
-                <div className="text-xl font-bold text-emerald-800 dark:text-emerald-300 tabular-nums mt-1">
-                  {timeStats.loggedHours}h
-                </div>
-                <div className="text-[10px] text-emerald-600/70 dark:text-emerald-400/70 mt-0.5">
-                  ({timeStats.loggedMinutes} minutes logged)
-                </div>
-              </div>
-
-              <div className="p-3 rounded-xl bg-violet-50/60 dark:bg-violet-950/20 border border-violet-100 dark:border-violet-900/40">
-                <div className="text-[11px] font-semibold text-violet-700 dark:text-violet-400">Estimated Effort</div>
-                <div className="text-xl font-bold text-violet-800 dark:text-violet-300 tabular-nums mt-1">
-                  {timeStats.estHours}h
-                </div>
-                <div className="text-[10px] text-violet-600/70 dark:text-violet-400/70 mt-0.5">
-                  planned across tasks
-                </div>
-              </div>
             </div>
 
             {/* Tags Overview */}

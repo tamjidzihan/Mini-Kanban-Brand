@@ -4,6 +4,7 @@ import {
   addMemberSchema,
   moveTaskSchema,
   reorderColumnsSchema,
+  updateTaskSchema,
   updateMemberRoleSchema,
 } from '../src/schemas/index.js';
 
@@ -39,4 +40,15 @@ test('task move ordering rejects duplicate task IDs', () => {
 test('column reordering requires at least one valid column ID', () => {
   assert.equal(reorderColumnsSchema.safeParse({ columnIds: [] }).success, false);
   assert.equal(reorderColumnsSchema.safeParse({ columnIds: ['not-a-uuid'] }).success, false);
+});
+
+test('task updates ignore removed time tracking fields', () => {
+  assert.deepEqual(
+    updateTaskSchema.parse({
+      title: 'Updated task',
+      estimatedHours: 4,
+      loggedMinutes: 30,
+    }),
+    { title: 'Updated task' }
+  );
 });

@@ -1,7 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { Modal } from '../ui/Modal';
-import { Input, Textarea, Select } from '../ui/Input';
+import { Input, Select } from '../ui/Input';
 import { Button } from '../ui/Button';
+import { MarkdownEditor } from '../ui/MarkdownEditor';
 import { Column, Priority, Task, User } from '../../types';
 import { AlertCircle, Calendar, User as UserIcon, Flag, Layers } from 'lucide-react';
 import { cn } from '../../lib/cn';
@@ -132,13 +133,21 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           required
         />
 
-        <Textarea
-          label="Description"
-          placeholder="Add context, acceptance criteria, or notes..."
-          rows={3}
-          value={description}
-          onChange={(e) => setDescription(e.target.value)}
-        />
+        <div className="space-y-1.5">
+          <label
+            htmlFor="task-description"
+            className="block text-xs font-semibold text-slate-600 dark:text-slate-400"
+          >
+            Description
+          </label>
+          <MarkdownEditor
+            id="task-description"
+            placeholder="Add context, acceptance criteria, or notes..."
+            rows={4}
+            value={description}
+            onChange={setDescription}
+          />
+        </div>
 
         {/* Priority Segmented Tiles (§14.27) */}
         <div>

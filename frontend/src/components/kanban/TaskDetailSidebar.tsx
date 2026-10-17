@@ -9,6 +9,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useToast } from '../../context/ToastContext';
 import { useClickOutside } from '../../hooks/useClickOutside';
 import { MarkdownViewer } from '../ui/MarkdownViewer';
+import { MarkdownEditor } from '../ui/MarkdownEditor';
 import {
   X,
   Calendar,
@@ -28,10 +29,7 @@ import {
   CheckSquare,
   Square,
   Plus,
-  Play,
-  Pause,
   History,
-  Timer,
   Pencil,
   Eye,
 } from 'lucide-react';
@@ -67,8 +65,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
   const [dueDate, setDueDate] = useState<string>('');
   const [columnId, setColumnId] = useState<string>('');
   const [assignedToId, setAssignedToId] = useState<string>('');
-  const [estimatedHours, setEstimatedHours] = useState<number | string>('');
-  const [loggedMinutes, setLoggedMinutes] = useState<number>(0);
 
   // Subtasks state
   const [subtasks, setSubtasks] = useState<Subtask[]>([]);
@@ -83,10 +79,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
   const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
   const [newTagName, setNewTagName] = useState('');
   const [newTagColor, setNewTagColor] = useState('emerald');
-
-  // Time Tracking Stopwatch
-  const [isTimerRunning, setIsTimerRunning] = useState(false);
-  const [timerSeconds, setTimerSeconds] = useState(0);
 
   // Bottom Tabs (Discussion vs Activity Log)
   const [activeTab, setActiveTab] = useState<'discussion' | 'activity'>('discussion');
@@ -118,8 +110,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
       setDueDate(task.dueDate ? task.dueDate.split('T')[0] : '');
       setColumnId(task.columnId || '');
       setAssignedToId(task.assignedToId || '');
-      setEstimatedHours(task.estimatedHours ?? '');
-      setLoggedMinutes(task.loggedMinutes || 0);
 
       // Load subtasks & tags from task if provided, or fetch
       fetchSubtasks(task.id);
@@ -129,19 +119,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
       fetchActivities(task.id);
     }
   }, [task?.id]);
-
-  // Stopwatch Interval
-  useEffect(() => {
-    let interval: any = null;
-    if (isTimerRunning) {
-      interval = setInterval(() => {
-        setTimerSeconds((prev) => prev + 1);
-      }, 1000);
-    } else if (!isTimerRunning && timerSeconds !== 0) {
-      clearInterval(interval);
-    }
-    return () => clearInterval(interval);
-  }, [isTimerRunning, timerSeconds]);
 
   // Handle ESC key to close
   useEffect(() => {
@@ -337,24 +314,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
     }
   };
 
-  // --- Time Tracking Handlers ---
-  const handleToggleTimer = () => {
-    if (isTimerRunning) {
-      // Stopping timer: add accumulated minutes to loggedMinutes
-      const addedMinutes = Math.round(timerSeconds / 60);
-      if (addedMinutes > 0) {
-        const nextTotal = (loggedMinutes || 0) + addedMinutes;
-        setLoggedMinutes(nextTotal);
-        handleFieldSave('loggedMinutes', nextTotal);
-        toast.success(`Logged ${addedMinutes}m of work.`);
-      }
-      setIsTimerRunning(false);
-      setTimerSeconds(0);
-    } else {
-      setIsTimerRunning(true);
-    }
-  };
-
   // --- Comments Handlers ---
   const handleAddComment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -402,13 +361,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
   const currentColumn = columns.find((c) => c.id === (columnId || task.columnId));
   const completedSubtasksCount = subtasks.filter((s) => s.isCompleted).length;
   const subtasksPercent = subtasks.length > 0 ? Math.round((completedSubtasksCount / subtasks.length) * 100) : 0;
-
-  // Format stopwatch timer seconds
-  const formatTimer = (sec: number) => {
-    const mins = Math.floor(sec / 60);
-    const remainingSec = sec % 60;
-    return `${String(mins).padStart(2, '0')}:${String(remainingSec).padStart(2, '0')}`;
-  };
 
   // Time remaining calculation
   const calculateDetailedRemaining = () => {
@@ -779,59 +731,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
             </div>
           </div>
 
-          {/* Time Tracking & Workload Estimates Widget */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-3 shadow-soft">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                <Timer className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Time Tracking & Estimates</span>
-              </div>
-              <span className="text-xs font-semibold text-slate-700 dark:text-slate-300 tabular-nums">
-                {Math.floor(loggedMinutes / 60)}h {loggedMinutes % 60}m logged
-              </span>
-            </div>
-
-            <div className="grid grid-cols-2 gap-3 items-center">
-              {/* Live Stopwatch */}
-              <div className="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700 flex items-center justify-between">
-                <div>
-                  <div className="text-[10px] uppercase font-bold text-slate-400">Stopwatch</div>
-                  <div className="text-sm font-mono font-bold text-slate-800 dark:text-slate-200">
-                    {formatTimer(timerSeconds)}
-                  </div>
-                </div>
-                <button
-                  type="button"
-                  onClick={handleToggleTimer}
-                  className={cn(
-                    'p-2 rounded-lg text-white font-bold transition-transform active:scale-95',
-                    isTimerRunning ? 'bg-rose-600 hover:bg-rose-700 animate-pulse' : 'bg-emerald-600 hover:bg-emerald-700'
-                  )}
-                >
-                  {isTimerRunning ? <Pause className="w-3.5 h-3.5" /> : <Play className="w-3.5 h-3.5" />}
-                </button>
-              </div>
-
-              {/* Estimate Input */}
-              <div className="p-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-200 dark:border-gray-700">
-                <div className="text-[10px] uppercase font-bold text-slate-400">Estimated (Hours)</div>
-                <input
-                  type="number"
-                  step="0.5"
-                  min="0"
-                  value={estimatedHours}
-                  placeholder="e.g. 4.0"
-                  disabled={!canEdit}
-                  onChange={(e) => {
-                    setEstimatedHours(e.target.value);
-                    handleFieldSave('estimatedHours', e.target.value ? parseFloat(e.target.value) : null);
-                  }}
-                  className="w-full text-xs font-bold text-slate-800 dark:text-slate-200 bg-transparent outline-none mt-0.5"
-                />
-              </div>
-            </div>
-          </div>
-
           {/* Interactive Subtasks & Checklist Widget */}
           <div className="p-4 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-3.5 shadow-soft">
             <div className="flex items-center justify-between">
@@ -1016,7 +915,12 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
                 {canEdit && description && (
                   <button
                     type="button"
-                    onClick={() => setIsEditingDesc(!isEditingDesc)}
+                    onClick={() => {
+                      if (isEditingDesc && description !== (task.description || '')) {
+                        void handleFieldSave('description', description);
+                      }
+                      setIsEditingDesc(!isEditingDesc);
+                    }}
                     className="inline-flex items-center gap-1 px-2 py-0.5 rounded-md text-[10px] font-semibold bg-slate-100 hover:bg-slate-200 dark:bg-gray-800 dark:hover:bg-gray-700 text-slate-600 dark:text-slate-300 transition-colors"
                   >
                     {isEditingDesc ? (
@@ -1037,17 +941,11 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
 
             {canEdit && isEditingDesc ? (
               <div className="space-y-2">
-                <textarea
+                <MarkdownEditor
                   value={description}
-                  onChange={(e) => setDescription(e.target.value)}
-                  onBlur={() => {
-                    if (description !== (task.description || '')) {
-                      handleFieldSave('description', description);
-                    }
-                  }}
+                  onChange={setDescription}
                   rows={6}
                   placeholder="Add more detailed context, user story, or notes (Markdown supported)..."
-                  className="w-full text-xs font-mono text-slate-800 dark:text-slate-200 bg-slate-50 dark:bg-gray-800/80 border border-gray-200 dark:border-gray-700 rounded-xl p-3 outline-none focus:ring-2 focus:ring-emerald-500/40 focus:border-emerald-500 transition-colors leading-relaxed dark:[color-scheme:dark]"
                 />
                 <div className="flex justify-end">
                   <button

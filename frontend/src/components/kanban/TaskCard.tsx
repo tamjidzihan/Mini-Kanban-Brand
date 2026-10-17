@@ -4,11 +4,12 @@ import { CSS } from '@dnd-kit/utilities';
 import { Task, Role } from '../../types';
 import { Badge } from '../ui/Badge';
 import { Avatar } from '../ui/Avatar';
-import { Calendar, GripVertical, MoreVertical, Pencil, Trash2, Clock, AlertCircle, CheckSquare, Timer } from 'lucide-react';
+import { Calendar, GripVertical, MoreVertical, Pencil, Trash2, Clock, AlertCircle, CheckSquare } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { getPriorityColor } from '../../lib/colors';
 import { getDueStatus } from '../../lib/format';
 import { useClickOutside } from '../../hooks/useClickOutside';
+import { MarkdownViewer } from '../ui/MarkdownViewer';
 
 export interface TaskCardProps {
   task: Task;
@@ -139,11 +140,12 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
       {/* Description */}
       {task.description && (
-        <p
-          className="mt-1.5 text-[11px] text-slate-500 dark:text-slate-400 line-clamp-2 pl-5 leading-relaxed"
-        >
-          {task.description}
-        </p>
+        <div className="mt-1.5 max-h-10 overflow-hidden pl-5">
+          <MarkdownViewer
+            content={task.description}
+            className="text-[11px] leading-relaxed [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_img]:hidden"
+          />
+        </div>
       )}
 
       {/* Tags Row */}
@@ -186,16 +188,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             </span>
           )}
 
-          {/* Logged Time Pill */}
-          {task.loggedMinutes && task.loggedMinutes > 0 ? (
-            <span
-              className="inline-flex items-center gap-0.5 text-[10px] font-medium text-slate-500 dark:text-slate-400"
-              title={`Logged: ${task.loggedMinutes} minutes`}
-            >
-              <Timer className="w-3 h-3 text-slate-400" />
-              <span>{Math.round(task.loggedMinutes / 60 * 10) / 10}h</span>
-            </span>
-          ) : null}
         </div>
 
         <div className="flex items-center gap-2 shrink-0">

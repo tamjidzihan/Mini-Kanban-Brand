@@ -60,8 +60,6 @@ export const updateTaskSchema = z.object({
   columnId: z.string().uuid('Invalid column ID').optional(),
   dueDate: z.string().nullable().optional(),
   assignedToId: z.string().nullable().optional(),
-  estimatedHours: z.number().nullable().optional(),
-  loggedMinutes: z.number().optional(),
 });
 
 export const moveTaskSchema = z.object({

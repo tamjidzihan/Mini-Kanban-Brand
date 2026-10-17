@@ -88,8 +88,6 @@ export interface Task {
   dueDate?: string | null;
   assignedToId?: string | null;
   assignedTo?: User | null;
-  estimatedHours?: number | null;
-  loggedMinutes?: number;
   subtasks?: Subtask[];
   tags?: TaskTag[];
   taskTags?: TaskTag[];
@@ -134,5 +132,4 @@ export interface Board {
   createdAt: string;
   updatedAt: string;
 }
-
 

@@ -131,8 +131,6 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
         ...(data.columnId && { columnId: data.columnId }),
         ...(data.dueDate !== undefined && { dueDate: data.dueDate ? new Date(data.dueDate) : null }),
         ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId }),
-        ...(data.estimatedHours !== undefined && { estimatedHours: data.estimatedHours }),
-        ...(data.loggedMinutes !== undefined && { loggedMinutes: data.loggedMinutes }),
       },
       include: {
         assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
@@ -147,8 +145,6 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
         activityDetails = `Changed priority from ${existing.priority} to ${data.priority}`;
       } else if (data.columnId && data.columnId !== existing.columnId) {
         activityDetails = 'Moved task to another column';
-      } else if (data.loggedMinutes !== undefined && data.loggedMinutes !== existing.loggedMinutes) {
-        activityDetails = `Logged time: ${Math.round(data.loggedMinutes)} minutes`;
       }
 
       await logActivity({

@@ -150,13 +150,6 @@ export const ListView: React.FC<ListViewProps> = ({
                               {t.subtasks.filter((s) => s.isCompleted).length}/{t.subtasks.length}
                             </span>
                           )}
-                          {((t.loggedMinutes && t.loggedMinutes > 0) || (t.estimatedHours && t.estimatedHours > 0)) && (
-                            <span className="inline-flex items-center gap-1 text-[10px] font-medium px-1.5 py-0.5 rounded bg-emerald-50 dark:bg-emerald-950/40 text-emerald-700 dark:text-emerald-400">
-                              <Clock className="w-2.5 h-2.5" />
-                              {t.loggedMinutes ? `${Math.floor(t.loggedMinutes / 60)}h ${t.loggedMinutes % 60}m` : ''}
-                              {t.estimatedHours ? ` / ${t.estimatedHours}h est` : ''}
-                            </span>
-                          )}
                         </div>
                         {t.description && (
                           <div className="text-[11px] text-slate-400 truncate mt-0.5">
