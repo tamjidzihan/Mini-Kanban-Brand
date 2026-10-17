@@ -63,18 +63,6 @@ export const requireBoardRole = (allowedRoles: Role[]) => {
         boardId = comment.task.boardId;
       }
 
-      if (!boardId && req.params.tagId) {
-        const tag = await prisma.tag.findUnique({
-          where: { id: req.params.tagId as string },
-          select: { boardId: true },
-        });
-        if (!tag) {
-          res.status(404).json({ message: 'Tag not found' });
-          return;
-        }
-        boardId = tag.boardId;
-      }
-
       if (!boardId && body.boardId) {
         boardId = body.boardId as string;
       }

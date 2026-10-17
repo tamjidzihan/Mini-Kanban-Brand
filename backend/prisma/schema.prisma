@@ -54,7 +54,6 @@ model Board {
   members     BoardMember[]
   columns     Column[]
   tasks       Task[]
-  tags        Tag[]
   activityLogs ActivityLog[]
 }
 
@@ -103,7 +102,6 @@ model Task {
   assignedTo     User?         @relation("AssignedTasks", fields: [assignedToId], references: [id], onDelete: SetNull)
   comments       Comment[]
   subtasks       Subtask[]
-  taskTags       TaskTag[]
   activityLogs   ActivityLog[]
 }
 
@@ -117,31 +115,6 @@ model Subtask {
   updatedAt   DateTime @updatedAt
 
   task        Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-}
-
-model Tag {
-  id        String    @id @default(uuid())
-  name      String
-  color     String    @default("emerald")
-  boardId   String
-  createdAt DateTime  @default(now())
-  updatedAt DateTime  @updatedAt
-
-  board     Board     @relation(fields: [boardId], references: [id], onDelete: Cascade)
-  taskTags  TaskTag[]
-
-  @@unique([boardId, name])
-}
-
-model TaskTag {
-  taskId    String
-  tagId     String
-  createdAt DateTime @default(now())
-
-  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
-  tag       Tag      @relation(fields: [tagId], references: [id], onDelete: Cascade)
-
-  @@id([taskId, tagId])
 }
 
 model Comment {

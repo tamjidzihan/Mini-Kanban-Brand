@@ -8,7 +8,7 @@ A collaborative Kanban task-management app built with React, TypeScript, Express
 - Create and manage workspaces and workflow columns.
 - Drag and drop tasks between columns, with ordering persisted to the database.
 - Share workspaces with **Owner**, **Editor**, and **Viewer** roles.
-- Track task descriptions, priority, due dates, assignees, tags, subtasks, comments, and activity.
+- Track task descriptions, priority, due dates, assignees, subtasks, comments, and activity.
 - Switch between Kanban, list, calendar, and analytics views.
 - Write and preview Markdown in workspace descriptions.
 - Upload JPEG, PNG, or WebP profile images up to 5 MB, or provide an image URL.

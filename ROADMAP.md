@@ -9,7 +9,7 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 - Registration and sign-in with JWT authentication and bcrypt password hashing.
 - Workspaces (boards), members, invitations, Owner/Editor/Viewer roles, columns, and tasks.
 - Kanban drag-and-drop plus list, calendar, and analytics views.
-- Task priority, due dates, assignees, tags, subtasks, comments, and activity history.
+- Task priority, due dates, assignees, subtasks, comments, and activity history.
 - Server-backed search for accessible boards and tasks.
 - Theme preferences, profile editing, image upload, and Markdown workspace descriptions.
 - MariaDB 11.4 through Prisma 6, migrations, and Docker Compose.
@@ -17,9 +17,9 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 
 ### Stabilization completed in this phase
 
-- Added board-role checks to task comments, subtasks, tags, and activity reads/writes; viewers are read-only for these resources.
-- Resolved board access from task, column, subtask, comment, and tag resources so routes without a board ID cannot skip membership checks.
-- Prevented task creation, task movement, tag assignment, and column deletion from mixing resources across workspaces.
+- Added board-role checks to task comments, subtasks, and activity reads/writes; viewers are read-only for these resources.
+- Resolved board access from task, column, subtask, and comment resources so routes without a board ID cannot skip membership checks.
+- Prevented task creation, task movement, and column deletion from mixing resources across workspaces.
 - Validated task-order IDs and required complete, unique destination-column ordering; column reorder now requires all columns from the authorized workspace.
 - Prevented API membership changes from granting an Editor or Viewer workspace-owner privileges and protected the actual workspace owner from ordinary role/removal changes.
 - Added per-IP rate limits to sign-in, registration, and password changes.
@@ -29,7 +29,7 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 ### Known gaps and risks
 
 - Automated tests currently cover selected request-schema boundaries only. There are no HTTP integration or end-to-end tests for the role matrix, IDOR boundaries, invitation lifecycle, or task ordering.
-- Request validation is not consistent across all controllers, notably tags, subtasks, AI endpoints, and parts of membership/comment handling.
+- Request validation is not consistent across all controllers, notably subtasks, AI endpoints, and parts of membership/comment handling.
 - Reordering is validated and written transactionally, but concurrent moves do not yet use conflict detection/retry or explicit order versions.
 - Rate limits use the default in-process store; production multi-instance deployments need a shared store and carefully configured proxy trust.
 - JWTs expire, but there is no refresh/revocation flow; a stolen unexpired token remains usable.
@@ -46,10 +46,10 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 **Status: Partially implemented.** This session closes several clear resource authorization and cross-workspace mutation gaps, adds basic auth rate limits, hardens production error responses, and adds schema tests. The rest remains a release blocker.
 
 - [x] Enforce membership and role checks on task-related routes.
-- [x] Validate that task, column, tag, and ordering resources remain within the authorized workspace.
+- [x] Validate that task, column, and ordering resources remain within the authorized workspace.
 - [x] Prevent role endpoints from assigning Owner to members.
 - [x] Rate-limit sign-in, registration, and password changes.
-- [ ] Add full Zod validation for every mutating endpoint, including subtasks, tags, comments, memberships, and AI generation.
+- [ ] Add full Zod validation for every mutating endpoint, including subtasks, comments, memberships, and AI generation.
 - [ ] Specify and test the full authorization matrix, including resource owners, pending members, comment deletion, and workspace ownership transfer.
 - [ ] Add integration tests for unauthenticated requests, Viewer writes, cross-workspace IDs, and role escalation.
 - [ ] Add concurrency conflict handling/retries for task and column ordering; make multi-step state and activity writes atomic where required.
@@ -99,7 +99,7 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 | View an accepted workspace and its tasks | Yes | Yes | Yes |
 | Create/edit/delete tasks and manage ordering | Yes | Yes | No |
 | Create/edit/delete columns | Yes | Yes | No |
-| Manage tags, subtasks, and add comments | Yes | Yes | No |
+| Manage subtasks and add comments | Yes | Yes | No |
 | Read comments, subtasks, and activity | Yes | Yes | Yes |
 | Invite members | Yes | Yes, subject to product policy | No |
 | Change member roles or remove members | Yes | No | No |

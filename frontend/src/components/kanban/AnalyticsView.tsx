@@ -59,24 +59,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
     return { total, completed, rate };
   }, [allTasks]);
 
-  // Tag distribution
-  const tagCounts = useMemo(() => {
-    const map: Record<string, { name: string; color: string; count: number }> = {};
-    allTasks.forEach((t) => {
-      if (t.tags) {
-        t.tags.forEach((tt) => {
-          if (tt.tag) {
-            if (!map[tt.tag.id]) {
-              map[tt.tag.id] = { name: tt.tag.name, color: tt.tag.color, count: 0 };
-            }
-            map[tt.tag.id].count++;
-          }
-        });
-      }
-    });
-    return Object.values(map).sort((a, b) => b.count - a.count);
-  }, [allTasks]);
-
   const assigneeCounts = useMemo(() => {
     const map: Record<string, { name: string; avatarUrl?: string | null; count: number }> = {};
     allTasks.forEach((t) => {
@@ -275,7 +257,7 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
           </div>
         </Card>
 
-        {/* Subtask progress and tag distribution */}
+        {/* Subtask progress */}
         <Card className="p-5 space-y-4">
           <div className="flex items-center justify-between border-b border-gray-100 dark:border-gray-800 pb-3">
             <div className="flex items-center gap-2">
@@ -297,24 +279,6 @@ export const AnalyticsView: React.FC<AnalyticsViewProps> = ({ columns }) => {
               <ProgressBar value={subtaskStats.completed} max={subtaskStats.total || 1} tone="emerald" />
             </div>
 
-            {/* Tags Overview */}
-            {tagCounts.length > 0 && (
-              <div className="pt-2 border-t border-gray-100 dark:border-gray-800">
-                <div className="text-xs font-semibold text-slate-700 dark:text-slate-300 mb-2">Active Tags</div>
-                <div className="flex flex-wrap gap-1.5">
-                  {tagCounts.map((tag, idx) => (
-                    <span
-                      key={idx}
-                      className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full text-xs font-semibold text-white shadow-sm"
-                      style={{ backgroundColor: tag.color }}
-                    >
-                      <span>{tag.name}</span>
-                      <span className="bg-black/20 px-1.5 py-0.2 rounded-full text-[10px]">{tag.count}</span>
-                    </span>
-                  ))}
-                </div>
-              </div>
-            )}
           </div>
         </Card>
       </div>

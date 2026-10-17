@@ -59,7 +59,6 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       include: {
         assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
         subtasks: { orderBy: { position: 'asc' } },
-        taskTags: { include: { tag: true } },
       },
     });
 
@@ -135,7 +134,6 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
       include: {
         assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
         subtasks: { orderBy: { position: 'asc' } },
-        taskTags: { include: { tag: true } },
       },
     });
 

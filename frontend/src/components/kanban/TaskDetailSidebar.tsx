@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { Task, Column, User, Role, Priority, Comment, Subtask, Tag, ActivityLog } from '../../types';
+import { Task, Column, User, Role, Priority, Comment, Subtask, ActivityLog } from '../../types';
 import { Avatar } from '../ui/Avatar';
 import { Badge } from '../ui/Badge';
 import { ProgressBar } from '../ui/ProgressBar';
@@ -15,7 +15,6 @@ import {
   Calendar,
   Clock,
   User as UserIcon,
-  Tag as TagIcon,
   AlignLeft,
   MessageSquare,
   Trash2,
@@ -73,13 +72,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
   const [isEnhancingDesc, setIsEnhancingDesc] = useState(false);
   const [isEditingDesc, setIsEditingDesc] = useState(false);
 
-  // Tags state
-  const [boardTags, setBoardTags] = useState<Tag[]>([]);
-  const [taskTags, setTaskTags] = useState<Tag[]>([]);
-  const [isTagDropdownOpen, setIsTagDropdownOpen] = useState(false);
-  const [newTagName, setNewTagName] = useState('');
-  const [newTagColor, setNewTagColor] = useState('emerald');
-
   // Bottom Tabs (Discussion vs Activity Log)
   const [activeTab, setActiveTab] = useState<'discussion' | 'activity'>('discussion');
   const [comments, setComments] = useState<Comment[]>([]);
@@ -93,8 +85,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
   const [isSaving, setIsSaving] = useState(false);
 
   const commentsEndRef = useRef<HTMLDivElement>(null);
-  const tagDropdownRef = useClickOutside<HTMLDivElement>(() => setIsTagDropdownOpen(false), isTagDropdownOpen);
-
   const sidebarRef = useClickOutside<HTMLElement>(() => {
     if (isOpen) onClose();
   }, isOpen);
@@ -111,10 +101,8 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
       setColumnId(task.columnId || '');
       setAssignedToId(task.assignedToId || '');
 
-      // Load subtasks & tags from task if provided, or fetch
+      // Load task-related details.
       fetchSubtasks(task.id);
-      fetchBoardTags(task.boardId);
-      fetchTaskTags(task);
       fetchComments(task.id);
       fetchActivities(task.id);
     }
@@ -137,23 +125,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
       setSubtasks(res.data.subtasks || []);
     } catch (err) {
       console.error('Failed to load subtasks:', err);
-    }
-  };
-
-  const fetchBoardTags = async (boardId: string) => {
-    try {
-      const res = await api.get(`/boards/${boardId}/tags`);
-      setBoardTags(res.data.tags || []);
-    } catch (err) {
-      console.error('Failed to load board tags:', err);
-    }
-  };
-
-  const fetchTaskTags = (currentTask: Task) => {
-    if (currentTask.taskTags) {
-      setTaskTags(currentTask.taskTags.map((tt: any) => tt.tag).filter(Boolean));
-    } else {
-      setTaskTags([]);
     }
   };
 
@@ -279,41 +250,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
     }
   };
 
-  // --- Tags Handlers ---
-  const handleToggleTag = async (tag: Tag) => {
-    if (!task) return;
-    const isAssigned = taskTags.some((t) => t.id === tag.id);
-    try {
-      if (isAssigned) {
-        await api.delete(`/tasks/${task.id}/tags/${tag.id}`);
-        setTaskTags((prev) => prev.filter((t) => t.id !== tag.id));
-      } else {
-        await api.post(`/tasks/${task.id}/tags/${tag.id}`);
-        setTaskTags((prev) => [...prev, tag]);
-      }
-      fetchActivities(task.id);
-    } catch (err: any) {
-      toast.error('Failed to update tag');
-    }
-  };
-
-  const handleCreateNewTag = async () => {
-    if (!task || !newTagName.trim()) return;
-    try {
-      const res = await api.post(`/boards/${task.boardId}/tags`, {
-        name: newTagName.trim(),
-        color: newTagColor,
-      });
-      const createdTag = res.data.tag;
-      setBoardTags((prev) => [...prev, createdTag]);
-      await handleToggleTag(createdTag);
-      setNewTagName('');
-      toast.success('Tag created and assigned.');
-    } catch (err: any) {
-      toast.error(err.response?.data?.message || 'Failed to create tag');
-    }
-  };
-
   // --- Comments Handlers ---
   const handleAddComment = async (e?: React.FormEvent) => {
     if (e) e.preventDefault();
@@ -407,15 +343,6 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
     MEDIUM: 'text-sky-700 dark:text-sky-300 bg-sky-50 dark:bg-sky-500/10 border-sky-300 dark:border-sky-500/30',
     HIGH: 'text-amber-700 dark:text-amber-300 bg-amber-50 dark:bg-amber-500/10 border-amber-300 dark:border-amber-500/30',
     URGENT: 'text-rose-700 dark:text-rose-300 bg-rose-50 dark:bg-rose-500/10 border-rose-300 dark:border-rose-500/30',
-  };
-
-  const tagColors: Record<string, string> = {
-    emerald: 'bg-emerald-50 text-emerald-700 border-emerald-300 dark:bg-emerald-500/10 dark:text-emerald-300 dark:border-emerald-500/30',
-    sky: 'bg-sky-50 text-sky-700 border-sky-300 dark:bg-sky-500/10 dark:text-sky-300 dark:border-sky-500/30',
-    violet: 'bg-violet-50 text-violet-700 border-violet-300 dark:bg-violet-500/10 dark:text-violet-300 dark:border-violet-500/30',
-    rose: 'bg-rose-50 text-rose-700 border-rose-300 dark:bg-rose-500/10 dark:text-rose-300 dark:border-rose-500/30',
-    amber: 'bg-amber-50 text-amber-700 border-amber-300 dark:bg-amber-500/10 dark:text-amber-300 dark:border-amber-500/30',
-    slate: 'bg-slate-100 text-slate-700 border-slate-300 dark:bg-gray-800 dark:text-slate-300 dark:border-gray-700',
   };
 
   return (
@@ -525,7 +452,7 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
         </div>
 
         {/* Scrollable Body Content */}
-        <div className="flex-1 overflow-y-auto p-4 sm:p-6 space-y-6">
+        <div className="flex-1 overflow-y-auto p-3 sm:p-4 space-y-4">
           {/* Title Area */}
           <div className="space-y-1.5">
             {canEdit ? (
@@ -553,138 +480,17 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
             </div>
           </div>
 
-          {/* Tags / Labels Row */}
-          <div className="space-y-2">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center gap-1.5 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-400">
-                <TagIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
-                <span>Labels & Tags</span>
-              </div>
-
-              {canEdit && (
-                <div ref={tagDropdownRef} className="relative">
-                  <button
-                    type="button"
-                    onClick={() => setIsTagDropdownOpen(!isTagDropdownOpen)}
-                    className="text-[11px] font-semibold text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                  >
-                    <Plus className="w-3 h-3" />
-                    <span>Manage Tags</span>
-                  </button>
-
-                  {isTagDropdownOpen && (
-                    <div className="absolute right-0 mt-2 w-64 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-2xl shadow-dropdown p-3 z-50 space-y-3 animate-in fade-in">
-                      <div className="text-xs font-bold text-slate-800 dark:text-slate-200">
-                        Select Workspace Tags
-                      </div>
-
-                      <div className="max-h-36 overflow-y-auto space-y-1">
-                        {boardTags.length === 0 ? (
-                          <p className="text-[11px] text-slate-400 italic">No tags created yet</p>
-                        ) : (
-                          boardTags.map((tag) => {
-                            const isSelected = taskTags.some((t) => t.id === tag.id);
-                            return (
-                              <button
-                                key={tag.id}
-                                type="button"
-                                onClick={() => handleToggleTag(tag)}
-                                className="w-full flex items-center justify-between p-1.5 rounded-lg text-xs hover:bg-slate-50 dark:hover:bg-gray-800 transition-colors"
-                              >
-                                <span className={cn('px-2 py-0.5 rounded-md text-[11px] font-semibold border', tagColors[tag.color] || tagColors.emerald)}>
-                                  {tag.name}
-                                </span>
-                                {isSelected && <Check className="w-3.5 h-3.5 text-emerald-600" />}
-                              </button>
-                            );
-                          })
-                        )}
-                      </div>
-
-                      {/* Create New Tag */}
-                      <div className="pt-2 border-t border-gray-100 dark:border-gray-800 space-y-2">
-                        <input
-                          type="text"
-                          placeholder="New tag name..."
-                          value={newTagName}
-                          onChange={(e) => setNewTagName(e.target.value)}
-                          className="w-full text-xs p-1.5 rounded-lg border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 text-slate-800 dark:text-slate-200 outline-none"
-                        />
-                        <div className="flex items-center justify-between gap-1">
-                          <div className="flex gap-1">
-                            {['emerald', 'sky', 'violet', 'rose', 'amber'].map((c) => (
-                              <button
-                                key={c}
-                                type="button"
-                                onClick={() => setNewTagColor(c)}
-                                className={cn(
-                                  'w-4 h-4 rounded-full border-2',
-                                  c === 'emerald' && 'bg-emerald-500',
-                                  c === 'sky' && 'bg-sky-500',
-                                  c === 'violet' && 'bg-violet-500',
-                                  c === 'rose' && 'bg-rose-500',
-                                  c === 'amber' && 'bg-amber-500',
-                                  newTagColor === c ? 'border-slate-900 dark:border-white scale-110' : 'border-transparent'
-                                )}
-                              />
-                            ))}
-                          </div>
-                          <button
-                            type="button"
-                            onClick={handleCreateNewTag}
-                            disabled={!newTagName.trim()}
-                            className="px-2 py-1 bg-emerald-600 text-white rounded-md text-[10px] font-semibold hover:bg-emerald-700 disabled:opacity-40"
-                          >
-                            Add Tag
-                          </button>
-                        </div>
-                      </div>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-
-            {/* Render Task's Tag Chips */}
-            <div className="flex items-center gap-1.5 flex-wrap min-h-[26px]">
-              {taskTags.length === 0 ? (
-                <span className="text-xs text-slate-400 italic">No tags attached</span>
-              ) : (
-                taskTags.map((tag) => (
-                  <span
-                    key={tag.id}
-                    className={cn(
-                      'inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full text-xs font-semibold border',
-                      tagColors[tag.color] || tagColors.emerald
-                    )}
-                  >
-                    <span>{tag.name}</span>
-                    {canEdit && (
-                      <button
-                        type="button"
-                        onClick={() => handleToggleTag(tag)}
-                        className="hover:opacity-75"
-                      >
-                        <X className="w-3 h-3" />
-                      </button>
-                    )}
-                  </span>
-                ))
-              )}
-            </div>
-          </div>
-
           {/* Smart Calendar & Remaining Countdown Widget */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-3 shadow-soft">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-2 shadow-soft">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                <Calendar className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Calendar & Deadline</span>
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                <Calendar className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Due date</span>
               </div>
               {remainingInfo && (
                 <span
                   className={cn(
-                    'inline-flex items-center gap-1.5 text-xs font-semibold px-2.5 py-1 rounded-full border',
+                    'inline-flex items-center gap-1 text-[10px] font-semibold px-2 py-0.5 rounded-full border',
                     remainingInfo.urgency === 'critical' &&
                     'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-300 border-rose-500/30',
                     remainingInfo.urgency === 'high' &&
@@ -712,7 +518,7 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
                     setDueDate(e.target.value);
                     handleFieldSave('dueDate', e.target.value || null);
                   }}
-                  className="w-full text-xs font-medium py-2 px-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark]"
+                  className="w-full text-xs font-medium py-1.5 px-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark]"
                 />
               </div>
 
@@ -723,7 +529,7 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
                     setDueDate('');
                     handleFieldSave('dueDate', null);
                   }}
-                  className="px-2.5 py-2 text-xs font-semibold rounded-xl bg-slate-200/80 dark:bg-gray-700 text-slate-600 dark:text-slate-300 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-500/20 transition-colors"
+                  className="px-2.5 py-1.5 text-xs font-semibold rounded-lg bg-slate-200/80 dark:bg-gray-700 text-slate-600 dark:text-slate-300 hover:bg-rose-100 hover:text-rose-700 dark:hover:bg-rose-500/20 transition-colors"
                 >
                   Clear Date
                 </button>
@@ -732,11 +538,11 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
           </div>
 
           {/* Interactive Subtasks & Checklist Widget */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-3.5 shadow-soft">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-2 shadow-soft">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
-                <CheckSquare className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Checklist Subtasks</span>
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                <CheckSquare className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Subtasks</span>
                 {subtasks.length > 0 && (
                   <span className="text-[11px] font-bold text-slate-500 dark:text-slate-400 tabular-nums">
                     ({completedSubtasksCount}/{subtasks.length})
@@ -750,17 +556,17 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
                   type="button"
                   onClick={handleAIBreakdown}
                   disabled={isGeneratingSubtasks}
-                  className="inline-flex items-center gap-1.5 px-2.5 py-1 text-[11px] font-bold rounded-lg bg-gradient-to-r from-emerald-600 to-teal-600 text-white hover:opacity-90 shadow-sm transition-all disabled:opacity-50"
+                  className="inline-flex items-center gap-1 px-2 py-1 text-[10px] font-bold rounded-lg bg-emerald-600 text-white hover:bg-emerald-700 transition-colors disabled:opacity-50"
                 >
-                  <Sparkles className="w-3 h-3 text-amber-300" />
-                  <span>{isGeneratingSubtasks ? 'Decomposing...' : 'AI Subtasks'}</span>
+                  <Sparkles className="w-3 h-3" />
+                  <span>{isGeneratingSubtasks ? 'Generating…' : 'Suggest'}</span>
                 </button>
               )}
             </div>
 
             {/* Subtasks Progress Bar */}
             {subtasks.length > 0 && (
-              <div className="space-y-1">
+              <div className="space-y-0.5">
                 <ProgressBar value={completedSubtasksCount} max={subtasks.length} tone="emerald" />
                 <div className="text-[10px] text-right font-semibold text-slate-400">
                   {subtasksPercent}% complete
@@ -769,16 +575,16 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
             )}
 
             {/* Subtasks List */}
-            <div className="space-y-1.5">
+            <div className="max-h-44 overflow-y-auto space-y-1 pr-1">
               {subtasks.map((st) => (
                 <div
                   key={st.id}
-                  className="flex items-center justify-between gap-2 p-2 rounded-xl bg-white dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/80 group transition-colors"
+                  className="flex items-center justify-between gap-2 p-1.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-200/70 dark:border-gray-700/80 group transition-colors"
                 >
                   <button
                     type="button"
                     onClick={() => handleToggleSubtask(st)}
-                    className="flex items-center gap-2.5 min-w-0 text-left flex-1"
+                    className="flex items-center gap-2 min-w-0 text-left flex-1"
                   >
                     {st.isCompleted ? (
                       <CheckCircle2 className="w-4 h-4 text-emerald-600 dark:text-emerald-400 shrink-0" />
@@ -810,13 +616,13 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
 
             {/* Add Subtask Input Form */}
             {canEdit && (
-              <form onSubmit={handleAddSubtask} className="flex items-center gap-2 pt-1">
+              <form onSubmit={handleAddSubtask} className="flex items-center gap-2">
                 <input
                   type="text"
                   placeholder="Add a checklist subtask..."
                   value={newSubtaskTitle}
                   onChange={(e) => setNewSubtaskTitle(e.target.value)}
-                  className="flex-1 text-xs py-1.5 px-3 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/40"
+                  className="flex-1 text-xs py-1.5 px-2.5 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/40"
                 />
                 <button
                   type="submit"
@@ -830,11 +636,11 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
           </div>
 
           {/* Assignee & Collaboration Widget */}
-          <div className="p-4 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-3 shadow-soft">
+          <div className="p-3 rounded-2xl bg-slate-50 dark:bg-gray-800/60 border border-gray-200/80 dark:border-gray-800 space-y-2 shadow-soft">
             <div className="flex items-center justify-between">
-              <div className="flex items-center gap-2 text-xs font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
-                <UserIcon className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                <span>Assigned Collaborator</span>
+              <div className="flex items-center gap-2 text-[11px] font-bold uppercase tracking-wider text-slate-600 dark:text-slate-300">
+                <UserIcon className="w-3.5 h-3.5 text-emerald-600 dark:text-emerald-400" />
+                <span>Assignee</span>
               </div>
               {user && canEdit && assignedToId !== user.id && (
                 <button
@@ -850,19 +656,19 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
               )}
             </div>
 
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {assignedToId ? (
-                <div className="flex items-center gap-2.5 flex-1 min-w-0">
+                <div className="flex items-center gap-2 flex-1 min-w-0">
                   <Avatar
                     name={members.find((m) => m.id === assignedToId)?.name || 'Assignee'}
                     src={members.find((m) => m.id === assignedToId)?.avatarUrl}
-                    size="sm"
+                    size="xs"
                   />
                   <div className="truncate">
-                    <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+                    <p className="text-[11px] font-semibold text-slate-900 dark:text-slate-100 truncate">
                       {members.find((m) => m.id === assignedToId)?.name || 'Unknown User'}
                     </p>
-                    <p className="text-[10px] text-slate-400 truncate">
+                    <p className="text-[10px] text-slate-400 truncate hidden sm:block">
                       {members.find((m) => m.id === assignedToId)?.email}
                     </p>
                   </div>
@@ -878,7 +684,7 @@ export const TaskDetailSidebar: React.FC<TaskDetailSidebarProps> = ({
                     setAssignedToId(e.target.value);
                     handleFieldSave('assignedToId', e.target.value || null);
                   }}
-                  className="text-xs font-semibold py-1.5 px-2.5 rounded-xl bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 [&>option]:dark:bg-gray-800 [&>option]:dark:text-slate-100"
+                  className="max-w-[46%] text-[11px] font-semibold py-1.5 px-2 rounded-lg bg-white dark:bg-gray-800 border border-gray-300 dark:border-gray-700 text-slate-800 dark:text-slate-200 outline-none focus:ring-2 focus:ring-emerald-500/40 dark:[color-scheme:dark] [&>option]:bg-white [&>option]:text-slate-900 [&>option]:dark:bg-gray-800 [&>option]:dark:text-slate-100"
                 >
                   <option value="">Unassigned</option>
                   {members.map((m) => (

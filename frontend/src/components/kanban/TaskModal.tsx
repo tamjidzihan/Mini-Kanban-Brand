@@ -130,6 +130,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
           placeholder="e.g. Design authentication modal"
           value={title}
           onChange={(e) => setTitle(e.target.value)}
+          data-autofocus="true"
           required
         />
 
@@ -151,7 +152,7 @@ export const TaskModal: React.FC<TaskModalProps> = ({
 
         {/* Priority Segmented Tiles (§14.27) */}
         <div>
-          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 flex items-center gap-1.5">
+          <label className="block text-xs font-semibold text-slate-600 dark:text-slate-400 mb-1.5 items-center gap-1.5">
             <Flag className="w-3.5 h-3.5" />
             <span>Priority</span>
           </label>

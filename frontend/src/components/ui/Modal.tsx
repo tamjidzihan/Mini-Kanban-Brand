@@ -1,4 +1,4 @@
-import React, { useEffect } from 'react';
+import React, { useEffect, useId, useRef } from 'react';
 import { createPortal } from 'react-dom';
 import { X } from 'lucide-react';
 import { cn } from '../../lib/cn';
@@ -24,27 +24,73 @@ export const Modal: React.FC<ModalProps> = ({
   showCloseButton = true,
   className,
 }) => {
-  // Lock body scroll
+  const dialogRef = useRef<HTMLDivElement>(null);
+  const generatedId = useId();
+  const titleId = `modal-title-${generatedId}`;
+  const descriptionId = `modal-description-${generatedId}`;
+
   useEffect(() => {
-    if (isOpen) {
-      document.body.style.overflow = 'hidden';
-    } else {
-      document.body.style.overflow = 'unset';
-    }
+    if (!isOpen) return;
+
+    const previousOverflow = document.body.style.overflow;
+    const previouslyFocused = document.activeElement instanceof HTMLElement
+      ? document.activeElement
+      : null;
+    document.body.style.overflow = 'hidden';
+
+    const focusFrame = requestAnimationFrame(() => {
+      const initialFocus = dialogRef.current?.querySelector<HTMLElement>(
+        '[data-autofocus="true"], input:not([type="hidden"]), textarea, select'
+      );
+      const firstFocusable = dialogRef.current?.querySelector<HTMLElement>(
+        'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+      );
+      (initialFocus || firstFocusable || dialogRef.current)?.focus();
+    });
+
     return () => {
-      document.body.style.overflow = 'unset';
+      cancelAnimationFrame(focusFrame);
+      document.body.style.overflow = previousOverflow;
+      if (previouslyFocused?.isConnected) previouslyFocused.focus();
     };
   }, [isOpen]);
 
-  // Esc key listener
   useEffect(() => {
     const handleKeyDown = (e: KeyboardEvent) => {
-      if (e.key === 'Escape' && isOpen) {
+      const dialog = dialogRef.current;
+      if (!isOpen || !dialog) return;
+
+      if (e.key === 'Escape') {
         onClose();
+        return;
+      }
+
+      if (e.key !== 'Tab') return;
+
+      const focusableElements = Array.from(
+        dialog.querySelectorAll<HTMLElement>(
+          'a[href], button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])'
+        )
+      ).filter((element) => element.getClientRects().length > 0);
+
+      if (focusableElements.length === 0) {
+        e.preventDefault();
+        dialog.focus();
+        return;
+      }
+
+      const first = focusableElements[0];
+      const last = focusableElements[focusableElements.length - 1];
+      if (e.shiftKey && (document.activeElement === first || !dialog.contains(document.activeElement))) {
+        e.preventDefault();
+        last.focus();
+      } else if (!e.shiftKey && (document.activeElement === last || !dialog.contains(document.activeElement))) {
+        e.preventDefault();
+        first.focus();
       }
     };
-    window.addEventListener('keydown', handleKeyDown);
-    return () => window.removeEventListener('keydown', handleKeyDown);
+    document.addEventListener('keydown', handleKeyDown);
+    return () => document.removeEventListener('keydown', handleKeyDown);
   }, [isOpen, onClose]);
 
   if (!isOpen) return null;
@@ -61,7 +107,9 @@ export const Modal: React.FC<ModalProps> = ({
       className="fixed inset-0 z-[80] flex items-end sm:items-center justify-center p-0 sm:p-4 overflow-y-auto"
       role="dialog"
       aria-modal="true"
-      aria-labelledby={title ? 'modal-title' : undefined}
+      aria-labelledby={title ? titleId : undefined}
+      aria-label={title ? undefined : description || 'Dialog'}
+      aria-describedby={description ? descriptionId : undefined}
     >
       {/* Scrim */}
       <div
@@ -72,6 +120,8 @@ export const Modal: React.FC<ModalProps> = ({
 
       {/* Panel */}
       <div
+        ref={dialogRef}
+        tabIndex={-1}
         className={cn(
           'relative w-full max-h-[92vh] flex flex-col',
           'bg-white dark:bg-gray-900 rounded-t-2xl sm:rounded-2xl',
@@ -87,14 +137,14 @@ export const Modal: React.FC<ModalProps> = ({
             <div>
               {title && (
                 <h2
-                  id="modal-title"
+                  id={titleId}
                   className="text-base font-semibold text-slate-900 dark:text-slate-100"
                 >
                   {title}
                 </h2>
               )}
               {description && (
-                <p className="text-xs text-slate-500 dark:text-slate-400 mt-1">
+                <p id={descriptionId} className="text-xs text-slate-500 dark:text-slate-400 mt-1">
                   {description}
                 </p>
               )}

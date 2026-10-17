@@ -50,17 +50,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
 
   const subtasks = task.subtasks || [];
   const completedSubtasks = subtasks.filter((s) => s.isCompleted).length;
-  const tags = task.taskTags ? task.taskTags.map((tt) => tt.tag).filter(Boolean) : [];
-
-  const tagColors: Record<string, string> = {
-    emerald: 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 border-emerald-200 dark:border-emerald-500/20',
-    sky: 'bg-sky-50 text-sky-700 dark:bg-sky-500/10 dark:text-sky-400 border-sky-200 dark:border-sky-500/20',
-    violet: 'bg-violet-50 text-violet-700 dark:bg-violet-500/10 dark:text-violet-400 border-violet-200 dark:border-violet-500/20',
-    rose: 'bg-rose-50 text-rose-700 dark:bg-rose-500/10 dark:text-rose-400 border-rose-200 dark:border-rose-500/20',
-    amber: 'bg-amber-50 text-amber-700 dark:bg-amber-500/10 dark:text-amber-400 border-amber-200 dark:border-amber-500/20',
-    slate: 'bg-slate-100 text-slate-700 dark:bg-gray-800 dark:text-slate-300 border-slate-200 dark:border-gray-700',
-  };
-
   return (
     <div
       ref={setNodeRef}
@@ -145,23 +134,6 @@ export const TaskCard: React.FC<TaskCardProps> = ({
             content={task.description}
             className="text-[11px] leading-relaxed [&_p]:my-0 [&_ul]:my-0 [&_ol]:my-0 [&_img]:hidden"
           />
-        </div>
-      )}
-
-      {/* Tags Row */}
-      {tags.length > 0 && (
-        <div className="mt-2 pl-5 flex items-center gap-1 flex-wrap">
-          {tags.map((tag) => (
-            <span
-              key={tag.id}
-              className={cn(
-                'text-[10px] font-semibold px-2 py-0.2 rounded-md border',
-                tagColors[tag.color] || tagColors.emerald
-              )}
-            >
-              {tag.name}
-            </span>
-          ))}
         </div>
       )}
 

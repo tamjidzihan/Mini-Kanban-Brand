@@ -2,7 +2,6 @@ import React from 'react';
 import { NavLink, Link } from 'react-router-dom';
 import {
   LayoutDashboard,
-  User,
   Plus,
   Kanban,
   FolderKanban,
@@ -81,6 +80,8 @@ export const Sidebar: React.FC<SidebarProps> = ({
             to="/"
             end
             onClick={handleLinkClick}
+            title={isCollapsed ? 'Dashboard' : undefined}
+            aria-label={isCollapsed ? 'Dashboard' : undefined}
             className={({ isActive }) =>
               cn(
                 'relative flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-150',
@@ -104,31 +105,6 @@ export const Sidebar: React.FC<SidebarProps> = ({
             )}
           </NavLink>
 
-          <NavLink
-            to="/profile"
-            onClick={handleLinkClick}
-            className={({ isActive }) =>
-              cn(
-                'relative flex items-center gap-3 px-3 py-2 text-xs font-medium rounded-xl transition-all duration-150',
-                isActive
-                  ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 font-semibold shadow-sm'
-                  : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-slate-200'
-              )
-            }
-          >
-            {({ isActive }) => (
-              <>
-                {isActive && (
-                  <span
-                    className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-500 rounded-r"
-                    aria-hidden="true"
-                  />
-                )}
-                <User className="w-4 h-4 shrink-0" />
-                {!isCollapsed && <span className="truncate">Profile Settings</span>}
-              </>
-            )}
-          </NavLink>
         </div>
 
         {/* Boards Section */}
@@ -198,17 +174,31 @@ export const Sidebar: React.FC<SidebarProps> = ({
               isCollapsed && 'justify-center p-1.5'
             )}
           >
-            <Avatar name={user.name} src={user.avatarUrl} size="sm" isOnline />
-            {!isCollapsed && (
-              <div className="min-w-0 flex-1">
-                <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
-                  {user.name}
-                </p>
-                <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
-                  {user.email}
-                </p>
-              </div>
-            )}
+            <NavLink
+              to="/profile"
+              onClick={handleLinkClick}
+              title={isCollapsed ? 'Profile Settings' : undefined}
+              aria-label={isCollapsed ? 'Profile Settings' : undefined}
+              className={({ isActive }) =>
+                cn(
+                  'flex min-w-0 items-center gap-2.5 rounded-lg focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500',
+                  isCollapsed ? 'justify-center' : 'flex-1',
+                  isActive && 'bg-emerald-100/70 dark:bg-emerald-500/10'
+                )
+              }
+            >
+              <Avatar name={user.name} src={user.avatarUrl} size="sm" isOnline />
+              {!isCollapsed && (
+                <div className="min-w-0 flex-1">
+                  <p className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
+                    {user.name}
+                  </p>
+                  <p className="text-[10px] text-slate-500 dark:text-slate-400 truncate">
+                    {user.email}
+                  </p>
+                </div>
+              )}
+            </NavLink>
             {!isCollapsed && (
               <button
                 type="button"

@@ -70,41 +70,57 @@ export const ListView: React.FC<ListViewProps> = ({
           <thead className="bg-slate-50 dark:bg-gray-800/80 border-b border-gray-200/80 dark:border-gray-800 text-[11px] font-semibold uppercase tracking-wider text-slate-500 dark:text-slate-400 select-none">
             <tr>
               <th
-                onClick={() => toggleSort('title')}
-                className="py-3 px-4 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400"
+                aria-sort={sortField === 'title' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                className="py-3 px-4"
               >
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => toggleSort('title')}
+                  className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
                   <span>Task Title</span>
                   <ArrowUpDown className="w-3 h-3" />
-                </div>
+                </button>
               </th>
               <th
-                onClick={() => toggleSort('column')}
-                className="py-3 px-4 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400"
+                aria-sort={sortField === 'column' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                className="py-3 px-4"
               >
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => toggleSort('column')}
+                  className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
                   <span>Column</span>
                   <ArrowUpDown className="w-3 h-3" />
-                </div>
+                </button>
               </th>
               <th
-                onClick={() => toggleSort('priority')}
-                className="py-3 px-4 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400"
+                aria-sort={sortField === 'priority' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                className="py-3 px-4"
               >
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => toggleSort('priority')}
+                  className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
                   <span>Priority</span>
                   <ArrowUpDown className="w-3 h-3" />
-                </div>
+                </button>
               </th>
               <th className="py-3 px-4">Assignee</th>
               <th
-                onClick={() => toggleSort('dueDate')}
-                className="py-3 px-4 cursor-pointer hover:text-emerald-600 dark:hover:text-emerald-400"
+                aria-sort={sortField === 'dueDate' ? (sortOrder === 'asc' ? 'ascending' : 'descending') : 'none'}
+                className="py-3 px-4"
               >
-                <div className="flex items-center gap-1.5">
+                <button
+                  type="button"
+                  onClick={() => toggleSort('dueDate')}
+                  className="flex items-center gap-1.5 hover:text-emerald-600 dark:hover:text-emerald-400"
+                >
                   <span>Due Date</span>
                   <ArrowUpDown className="w-3 h-3" />
-                </div>
+                </button>
               </th>
               {canEdit && <th className="py-3 px-4 text-right">Actions</th>}
             </tr>
@@ -122,28 +138,18 @@ export const ListView: React.FC<ListViewProps> = ({
                 return (
                   <tr
                     key={t.id}
-                    onClick={() => onEditTask(t)}
-                    className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors cursor-pointer"
+                    className="hover:bg-slate-50/80 dark:hover:bg-gray-800/50 transition-colors"
                   >
                     <td className="py-3 px-4 font-medium text-slate-900 dark:text-slate-100">
                       <div className="max-w-md">
                         <div className="flex items-center gap-2 flex-wrap">
-                          <span className="font-semibold text-xs truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors">
+                          <button
+                            type="button"
+                            onClick={() => onEditTask(t)}
+                            className="text-left font-semibold text-xs truncate hover:text-emerald-600 dark:hover:text-emerald-400 transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded"
+                          >
                             {t.title}
-                          </span>
-                          {t.tags && t.tags.length > 0 && (
-                            <div className="flex items-center gap-1 flex-wrap">
-                              {t.tags.map((tt) => (
-                                <span
-                                  key={tt.tagId || tt.tag?.id || Math.random()}
-                                  className="text-[10px] font-semibold px-1.5 py-0.2 rounded-full text-white"
-                                  style={{ backgroundColor: tt.tag?.color || '#3b82f6' }}
-                                >
-                                  {tt.tag?.name}
-                                </span>
-                              ))}
-                            </div>
-                          )}
+                          </button>
                           {t.subtasks && t.subtasks.length > 0 && (
                             <span className="inline-flex items-center gap-1 text-[10px] font-semibold px-1.5 py-0.5 rounded bg-slate-100 dark:bg-gray-800 text-slate-600 dark:text-slate-300">
                               <CheckCircle2 className="w-2.5 h-2.5 text-emerald-500" />

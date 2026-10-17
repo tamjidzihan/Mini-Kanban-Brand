@@ -27,6 +27,8 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
   const [results, setResults] = useState<SearchResult[]>([]);
   const [selectedIndex, setSelectedIndex] = useState(0);
   const [isLoading, setIsLoading] = useState(false);
+  const [searchError, setSearchError] = useState(false);
+  const [retryCount, setRetryCount] = useState(0);
   const inputRef = useRef<HTMLInputElement>(null);
   const navigate = useNavigate();
   const location = useLocation();
@@ -90,7 +92,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
           id: 'action-view-analytics',
           type: 'action',
           title: 'Switch to Analytics & Metrics View',
-          subtitle: 'View workload, completion rate, and time velocity',
+          subtitle: 'View task completion and board metrics',
           icon: <BarChart2 className="w-3.5 h-3.5" />,
           action: () => {
             window.dispatchEvent(new CustomEvent('change-board-view', { detail: 'analytics' }));
@@ -119,6 +121,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
 
   useEffect(() => {
     if (!query.trim()) {
+      setSearchError(false);
       setResults(quickActions);
       return;
     }
@@ -129,10 +132,14 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
       (a.subtitle && a.subtitle.toLowerCase().includes(query.toLowerCase()))
     );
 
+    let isCurrentRequest = true;
     const timer = setTimeout(async () => {
+      if (!isCurrentRequest) return;
       setIsLoading(true);
+      setSearchError(false);
       try {
         const res = await api.get(`/boards/search?q=${encodeURIComponent(query)}`);
+        if (!isCurrentRequest) return;
         const { boards = [], tasks = [] } = res.data;
 
         const formattedBoards: SearchResult[] = boards.map((b: any) => ({
@@ -157,14 +164,20 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
         setSelectedIndex(0);
       } catch (err) {
         console.error('Search failed:', err);
-        setResults(filteredActions);
+        if (isCurrentRequest) {
+          setResults(filteredActions);
+          setSearchError(true);
+        }
       } finally {
-        setIsLoading(false);
+        if (isCurrentRequest) setIsLoading(false);
       }
     }, 180);
 
-    return () => clearTimeout(timer);
-  }, [query, quickActions]);
+    return () => {
+      isCurrentRequest = false;
+      clearTimeout(timer);
+    };
+  }, [query, quickActions, retryCount]);
 
   const handleSelect = (item: SearchResult) => {
     onClose();
@@ -205,6 +218,10 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
 
       {/* Dialog */}
       <div
+        role="dialog"
+        aria-modal="true"
+        aria-label="Global search"
+        aria-busy={isLoading}
         className="relative w-full max-w-xl bg-white dark:bg-gray-900 rounded-2xl border border-gray-200/80 dark:border-gray-800 shadow-dropdown overflow-hidden flex flex-col transition-all"
         onKeyDown={handleKeyDown}
       >
@@ -216,12 +233,16 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
             type="text"
             value={query}
             onChange={(e) => setQuery(e.target.value)}
-            placeholder="Search boards, tasks, or columns..."
+            placeholder="Search boards and tasks..."
+            aria-label="Search boards and tasks"
+            autoComplete="off"
             className="flex-1 bg-transparent text-sm text-slate-900 dark:text-slate-100 placeholder-slate-400 outline-none"
           />
           {query && (
             <button
+              type="button"
               onClick={() => setQuery('')}
+              aria-label="Clear search"
               className="p-1 rounded-md text-slate-400 hover:text-slate-600 dark:hover:text-slate-200"
             >
               <X className="w-4 h-4" />
@@ -237,6 +258,19 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
           {isLoading ? (
             <div className="py-8 text-center text-xs text-slate-400 animate-pulse">
               Searching workspace...
+            </div>
+          ) : searchError ? (
+            <div className="py-8 px-4 text-center" role="alert">
+              <p className="text-xs text-rose-600 dark:text-rose-400">
+                Search failed. Check your connection and try again.
+              </p>
+              <button
+                type="button"
+                onClick={() => setRetryCount((count) => count + 1)}
+                className="mt-3 text-xs font-semibold text-emerald-700 hover:underline dark:text-emerald-400"
+              >
+                Retry search
+              </button>
             </div>
           ) : query.trim() && results.length === 0 ? (
             <div className="py-10 text-center text-xs text-slate-400">

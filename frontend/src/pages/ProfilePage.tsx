@@ -7,7 +7,6 @@ import { Avatar } from '../components/ui/Avatar';
 import { Button } from '../components/ui/Button';
 import { Card } from '../components/ui/Card';
 import { Input } from '../components/ui/Input';
-import { Badge } from '../components/ui/Badge';
 import { api } from '../lib/api';
 import { Board } from '../types';
 import {
@@ -149,13 +148,10 @@ export const ProfilePage: React.FC = () => {
               className="w-20 h-20 text-2xl ring-4 ring-emerald-500/20"
             />
             <div className="flex-1 text-center sm:text-left space-y-2">
-              <div className="flex flex-col sm:flex-row sm:items-center gap-2 justify-between">
+              <div className="flex flex-col sm:flex-row sm:items-center gap-2">
                 <h1 className="text-xl sm:text-2xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
                   {user?.name}
                 </h1>
-                <Badge variant="emerald" dot>
-                  Verified User Account
-                </Badge>
               </div>
               <div className="flex items-center justify-center sm:justify-start gap-2 text-slate-500 dark:text-slate-400 text-xs">
                 <Mail className="w-3.5 h-3.5" />
