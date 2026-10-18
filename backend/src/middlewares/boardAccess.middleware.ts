@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { Role } from '@prisma/client';
+import { Role } from '../../generated/prisma/index.js';
 import { prisma } from '../config/db.js';
 
 export const requireBoardRole = (allowedRoles: Role[]) => {

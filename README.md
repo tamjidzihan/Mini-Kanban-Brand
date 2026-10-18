@@ -22,7 +22,7 @@ A collaborative Kanban task-management app built with React, TypeScript, Express
 | Data and drag-and-drop | TanStack Query, Axios, `@dnd-kit` |
 | Markdown | `react-markdown`, `remark-gfm` |
 | Backend | Node.js, Express, TypeScript, Zod |
-| Database | MariaDB 11.4, Prisma 7 |
+| Database | MariaDB 11.4, Prisma 6.19 |
 | Authentication | JWT, bcryptjs |
 | Local orchestration | Docker Compose |
 
@@ -83,7 +83,9 @@ JWT_SECRET="replace-with-a-long-random-secret"
 CORS_ORIGIN="http://localhost:5373"
 ```
 
-Prisma reads `DATABASE_URL` from `backend/.env` through `prisma.config.ts` for migrations. The application uses that same setting to configure Prisma's MariaDB driver adapter. Generate the app-local Prisma Client with `npm run prisma:generate`; `npm run build` runs generation automatically before compiling. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
+Prisma reads `DATABASE_URL` from `backend/.env` using the datasource setting in `prisma/schema.prisma`. The generated client uses Prisma 6's `engineType = "client"` with the MariaDB driver adapter, so the app-local generated client does not depend on a platform-specific query-engine binary. Generate it with `npm run prisma:generate`; `npm run build` runs generation automatically before compiling. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
+
+`TRUST_PROXY_HOPS` defaults to `0` (no proxy headers trusted). If the backend is only reachable through one trusted reverse proxy, set it to `1` so rate limiting uses the client IP forwarded by that proxy. Set the value to the actual number of trusted proxy hops in your hosting setup; do not trust forwarded headers if clients can connect directly to the Node process.
 
 Apply the checked-in migrations and start the API:
 
@@ -93,6 +95,13 @@ npm run dev
 ```
 
 The API runs at `http://localhost:5000`.
+
+The public diagnostic endpoint is `GET /api/health` (also available at
+`GET /api/health/full`). It checks database connectivity, verifies that the
+`User` table exists, and reports the configured CORS origin and whether the
+request's `Origin` matches it. It does not return credentials or raw database
+errors. A `503` response means the database is unreachable or its migrations
+have not initialized the schema.
 
 ### 3. Start the frontend
 
@@ -152,15 +161,54 @@ npm run build
 ```
 
 Upload the application files to the cPanel Node.js Application Root, including
-`dist/`, `generated/`, `prisma/`, `prisma.config.ts`, `package.json`, and
-`package-lock.json`. Then install the production dependencies using cPanel's
+`dist/`, `generated/`, `prisma/`, `package.json`, and `package-lock.json`. Then
+install the production dependencies using cPanel's
 Node.js application interface and restart the app. The generated Prisma Client
 is stored in `generated/prisma/` and imported from the application, rather than
-being expected under cPanel's separate Node virtual environment.
+being expected under cPanel's separate Node virtual environment. This project
+uses Prisma 6.19 so the datasource URL remains in the Prisma schema; ensure
+the cPanel application environment contains `DATABASE_URL` for runtime, and
+provide it in the shell environment when generating or applying migrations.
 
-Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, and `NODE_ENV=production` in
-the cPanel application environment. Back up the database and inspect pending
-migrations before asking the host to apply them.
+Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `TRUST_PROXY_HOPS=1`, and
+`NODE_ENV=production` in the cPanel application environment when Passenger
+forwards requests through one trusted proxy. The hop count must match the
+actual trusted proxy chain, and the Node process should not be directly
+reachable by untrusted clients.
+
+The error `The table User does not exist` means migrations have not been
+applied to the database selected by `DATABASE_URL`, or the app is connected to
+the wrong database. After verifying the cPanel `DATABASE_URL` matches the
+runtime setting, have the host run these commands from the application root:
+
+```sh
+npx prisma migrate status
+npm run prisma:deploy
+```
+
+If cPanel has no Terminal, database migration is still possible if the database
+accepts remote connections from your computer or a CI runner: run the Prisma 6
+CLI from the backend project with `DATABASE_URL` set to the cPanel database URL.
+For PowerShell, from the repository root after installing backend dependencies:
+
+```powershell
+$env:DATABASE_URL = "mysql://CPANEL_DB_USER:URL_ENCODED_PASSWORD@DB_HOST:3306/CPANEL_DB_NAME"
+npm --prefix backend run prisma:deploy
+Remove-Item Env:DATABASE_URL
+```
+
+First inspect the migrations and back up the target database. Restrict remote
+database access to your IP where possible and use a database user limited to
+the application database. If remote access is disabled, ask the provider to
+enable it temporarily or run `npx prisma migrate deploy` from the application
+root. Do not manually create the `User` table in phpMyAdmin; Prisma migration
+history must also be applied correctly. Do not add a public HTTP endpoint that
+runs migrations; it would expose a database-changing operation to the internet.
+
+Back up the database and inspect pending migrations before applying them.
+Pending migrations in this project remove the old time-tracking and
+Labels & Tags data/tables, so do not deploy them to a database containing data
+you need to preserve.
 
 The app does not ship with demo accounts or sample records. Register an account and create a workspace to get started.
 

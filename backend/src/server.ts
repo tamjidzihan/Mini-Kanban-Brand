@@ -8,6 +8,11 @@ import { errorHandler } from './middlewares/error.middleware.js';
 import { connectDB } from './config/db.js';
 
 const app = express();
+const trustProxyHops = Number(ENV.TRUST_PROXY_HOPS);
+if (!Number.isSafeInteger(trustProxyHops) || trustProxyHops < 0) {
+  throw new Error('TRUST_PROXY_HOPS must be a non-negative integer.');
+}
+app.set('trust proxy', trustProxyHops);
 
 // Log all incoming HTTP traffic
 app.use(morgan('dev'));

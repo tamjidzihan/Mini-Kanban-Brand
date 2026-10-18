@@ -4,7 +4,6 @@ WORKDIR /app
 
 COPY package*.json ./
 COPY prisma ./prisma/
-COPY prisma.config.ts ./prisma.config.ts
 
 RUN npm install
 
@@ -21,7 +20,6 @@ COPY --from=builder /app/node_modules ./node_modules
 COPY --from=builder /app/dist ./dist
 COPY --from=builder /app/generated ./generated
 COPY --from=builder /app/prisma ./prisma
-COPY --from=builder /app/prisma.config.ts ./prisma.config.ts
 
 EXPOSE 5000
 
