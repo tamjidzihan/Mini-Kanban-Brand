@@ -4,7 +4,7 @@ import jwt from 'jsonwebtoken';
 import { randomUUID } from 'node:crypto';
 import { mkdir, unlink, writeFile } from 'node:fs/promises';
 import path from 'node:path';
-import { prisma } from '../config/db.js';
+import { User, Board, BoardMember, Task, Op } from '../models/index.js';
 import { ENV } from '../config/env.js';
 import {
   registerSchema,
@@ -17,7 +17,7 @@ export const register = async (req: Request, res: Response, next: NextFunction):
   try {
     const data = registerSchema.parse(req.body);
 
-    const existingUser = await prisma.user.findUnique({
+    const existingUser = await User.findOne({
       where: { email: data.email.toLowerCase() },
     });
 
@@ -28,19 +28,10 @@ export const register = async (req: Request, res: Response, next: NextFunction):
 
     const hashedPassword = await bcrypt.hash(data.password, 10);
 
-    const user = await prisma.user.create({
-      data: {
-        name: data.name,
-        email: data.email.toLowerCase(),
-        password: hashedPassword,
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+    const user = await User.create({
+      name: data.name,
+      email: data.email.toLowerCase(),
+      password: hashedPassword,
     });
 
     const token = jwt.sign(
@@ -50,7 +41,13 @@ export const register = async (req: Request, res: Response, next: NextFunction):
     );
 
     res.status(201).json({
-      user,
+      user: {
+        id: user.id,
+        name: user.name,
+        email: user.email,
+        avatarUrl: user.avatarUrl,
+        createdAt: user.createdAt,
+      },
       token,
     });
   } catch (error) {
@@ -62,7 +59,7 @@ export const login = async (req: Request, res: Response, next: NextFunction): Pr
   try {
     const data = loginSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
+    const user = await User.findOne({
       where: { email: data.email.toLowerCase() },
     });
 
@@ -108,15 +105,8 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
       return;
     }
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+    const user = await User.findByPk(userId, {
+      attributes: ['id', 'name', 'email', 'avatarUrl', 'createdAt'],
     });
 
     if (!user) {
@@ -125,15 +115,15 @@ export const getMe = async (req: Request, res: Response, next: NextFunction): Pr
     }
 
     // Get basic stats for profile display
-    const ownedBoardsCount = await prisma.board.count({
+    const ownedBoardsCount = await Board.count({
       where: { ownerId: userId },
     });
 
-    const memberBoardsCount = await prisma.boardMember.count({
+    const memberBoardsCount = await BoardMember.count({
       where: { userId },
     });
 
-    const assignedTasksCount = await prisma.task.count({
+    const assignedTasksCount = await Task.count({
       where: { assignedToId: userId },
     });
 
@@ -163,9 +153,8 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
     const data = updateProfileSchema.parse(req.body);
     let avatarUrl = data.avatarUrl;
 
-    const existingUser = await prisma.user.findUnique({
-      where: { id: userId },
-      select: { avatarUrl: true },
+    const existingUser = await User.findByPk(userId, {
+      attributes: ['id', 'avatarUrl'],
     });
     if (!existingUser) {
       res.status(404).json({ message: 'User not found' });
@@ -202,27 +191,21 @@ export const updateProfile = async (req: Request, res: Response, next: NextFunct
       avatarUrl = `/uploads/avatars/${filename}`;
     }
 
-    const updatedUser = await prisma.user.update({
-      where: { id: userId },
-      data: {
-        ...(data.name && { name: data.name }),
-        ...(req.file
-          ? { avatarUrl }
-          : data.avatarUrl !== undefined
-            ? { avatarUrl: data.avatarUrl || null }
-            : {}),
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-        createdAt: true,
-      },
+    await existingUser.update({
+      ...(data.name && { name: data.name }),
+      ...(req.file
+        ? { avatarUrl }
+        : data.avatarUrl !== undefined
+          ? { avatarUrl: data.avatarUrl || null }
+          : {}),
+    });
+
+    const updatedUser = await User.findByPk(userId, {
+      attributes: ['id', 'name', 'email', 'avatarUrl', 'createdAt'],
     });
 
     if (
-      existingUser.avatarUrl !== updatedUser.avatarUrl &&
+      existingUser.avatarUrl !== updatedUser?.avatarUrl &&
       existingUser.avatarUrl?.startsWith('/uploads/avatars/')
     ) {
       const oldFilename = path.basename(existingUser.avatarUrl);
@@ -258,9 +241,7 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 
     const data = changePasswordSchema.parse(req.body);
 
-    const user = await prisma.user.findUnique({
-      where: { id: userId },
-    });
+    const user = await User.findByPk(userId);
 
     if (!user) {
       res.status(404).json({ message: 'User not found' });
@@ -275,10 +256,7 @@ export const changePassword = async (req: Request, res: Response, next: NextFunc
 
     const hashedPassword = await bcrypt.hash(data.newPassword, 10);
 
-    await prisma.user.update({
-      where: { id: userId },
-      data: { password: hashedPassword },
-    });
+    await user.update({ password: hashedPassword });
 
     res.json({ message: 'Password updated successfully' });
   } catch (error) {
@@ -291,27 +269,23 @@ export const searchUsers = async (req: Request, res: Response, next: NextFunctio
     const q = (req.query.q as string || '').trim().toLowerCase();
     const currentUserId = req.user?.id;
 
-    const users = await prisma.user.findMany({
-      where: {
-        AND: [
-          currentUserId ? { id: { not: currentUserId } } : {},
-          q
-            ? {
-                OR: [
-                  { email: { contains: q } },
-                  { name: { contains: q } },
-                ],
-              }
-            : {},
+    const whereConditions: any[] = [];
+    if (currentUserId) {
+      whereConditions.push({ id: { [Op.ne]: currentUserId } });
+    }
+    if (q) {
+      whereConditions.push({
+        [Op.or]: [
+          { email: { [Op.like]: `%${q}%` } },
+          { name: { [Op.like]: `%${q}%` } },
         ],
-      },
-      select: {
-        id: true,
-        name: true,
-        email: true,
-        avatarUrl: true,
-      },
-      take: 20,
+      });
+    }
+
+    const users = await User.findAll({
+      where: whereConditions.length > 0 ? { [Op.and]: whereConditions } : {},
+      attributes: ['id', 'name', 'email', 'avatarUrl'],
+      limit: 20,
     });
 
     res.json({ users });

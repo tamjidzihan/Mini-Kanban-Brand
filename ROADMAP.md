@@ -12,7 +12,7 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 - Task priority, due dates, assignees, subtasks, comments, and activity history.
 - Server-backed search for accessible boards and tasks.
 - Theme preferences, profile editing, image upload, and Markdown workspace descriptions.
-- MariaDB 11.4 through Prisma 6, migrations, and Docker Compose.
+- MariaDB 11.4 through Sequelize 6, migrations, and Docker Compose.
 - No shipped demo accounts or seeded sample records.
 
 ### Stabilization completed in this phase
@@ -84,7 +84,7 @@ This roadmap tracks the current implementation against the goal of a cohesive, s
 
 ## Phase 5 — Release readiness and performance
 
-- Add CI for frontend/backend builds, tests, Prisma validation, and migration checks.
+- Add CI for frontend/backend builds, tests, and database migration checks.
 - Add API integration and browser workflow tests for authentication, workspaces, task lifecycle, ordering, and authorization.
 - Add route-level frontend code splitting and analyze Markdown/editor bundle cost.
 - Add structured logs, request IDs, readiness checks, graceful shutdown, backup/restore guidance, and production secret/CORS validation.

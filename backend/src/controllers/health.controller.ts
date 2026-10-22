@@ -1,14 +1,9 @@
 import { Request, Response } from 'express';
-import { prisma } from '../config/db.js';
+import { sequelize, User } from '../models/index.js';
 import { ENV } from '../config/env.js';
 
 type DatabaseStatus = 'connected' | 'error';
 type SchemaStatus = 'ready' | 'not_initialized' | 'error' | 'not_checked';
-
-const getPrismaErrorCode = (error: unknown): string | undefined => {
-  if (typeof error !== 'object' || error === null || !('code' in error)) return undefined;
-  return typeof error.code === 'string' ? error.code : undefined;
-};
 
 export const getHealthSummary = async (req: Request, res: Response): Promise<void> => {
   let databaseStatus: DatabaseStatus = 'error';
@@ -17,15 +12,15 @@ export const getHealthSummary = async (req: Request, res: Response): Promise<voi
 
   const databaseStart = Date.now();
   try {
-    await prisma.$queryRaw`SELECT 1`;
+    await sequelize.authenticate();
     databaseStatus = 'connected';
     databaseLatencyMs = Date.now() - databaseStart;
 
     try {
-      await prisma.user.count();
+      await User.count();
       schemaStatus = 'ready';
-    } catch (error) {
-      schemaStatus = getPrismaErrorCode(error) === 'P2021' ? 'not_initialized' : 'error';
+    } catch {
+      schemaStatus = 'not_initialized';
     }
   } catch {
     databaseStatus = 'error';

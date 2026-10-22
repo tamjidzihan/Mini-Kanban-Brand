@@ -1,5 +1,5 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/db.js';
+import { BoardMember, Board, User } from '../models/index.js';
 
 export const getMyInvitations = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
@@ -9,24 +9,26 @@ export const getMyInvitations = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    const invitations = await prisma.boardMember.findMany({
+    const invitations = await BoardMember.findAll({
       where: {
         userId,
         status: 'PENDING',
       },
-      include: {
-        board: {
-          select: {
-            id: true,
-            title: true,
-            description: true,
-            owner: {
-              select: { id: true, name: true, email: true, avatarUrl: true },
+      include: [
+        {
+          model: Board,
+          as: 'board',
+          attributes: ['id', 'title', 'description'],
+          include: [
+            {
+              model: User,
+              as: 'owner',
+              attributes: ['id', 'name', 'email', 'avatarUrl'],
             },
-          },
+          ],
         },
-      },
-      orderBy: { createdAt: 'desc' },
+      ],
+      order: [['createdAt', 'DESC']],
     });
 
     res.json({ invitations });
@@ -45,9 +47,8 @@ export const acceptInvitation = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    const invitation = await prisma.boardMember.findUnique({
-      where: { id: invitationId },
-      include: { board: { select: { title: true } } },
+    const invitation = await BoardMember.findByPk(invitationId, {
+      include: [{ model: Board, as: 'board', attributes: ['title'] }],
     });
 
     if (!invitation || invitation.userId !== userId) {
@@ -60,15 +61,14 @@ export const acceptInvitation = async (req: Request, res: Response, next: NextFu
       return;
     }
 
-    const updated = await prisma.boardMember.update({
-      where: { id: invitationId },
-      data: { status: 'ACCEPTED' },
-    });
+    await invitation.update({ status: 'ACCEPTED' });
+
+    const boardObj = (invitation as any).board;
 
     res.json({
-      member: updated,
+      member: invitation,
       boardId: invitation.boardId,
-      message: `You accepted the invitation to join "${invitation.board.title}"`,
+      message: `You accepted the invitation to join "${boardObj?.title}"`,
     });
   } catch (error) {
     next(error);
@@ -85,9 +85,8 @@ export const declineInvitation = async (req: Request, res: Response, next: NextF
       return;
     }
 
-    const invitation = await prisma.boardMember.findUnique({
-      where: { id: invitationId },
-      include: { board: { select: { title: true } } },
+    const invitation = await BoardMember.findByPk(invitationId, {
+      include: [{ model: Board, as: 'board', attributes: ['title'] }],
     });
 
     if (!invitation || invitation.userId !== userId) {
@@ -95,12 +94,12 @@ export const declineInvitation = async (req: Request, res: Response, next: NextF
       return;
     }
 
-    await prisma.boardMember.delete({
-      where: { id: invitationId },
-    });
+    const boardObj = (invitation as any).board;
+
+    await invitation.destroy();
 
     res.json({
-      message: `You declined the invitation to join "${invitation.board.title}"`,
+      message: `You declined the invitation to join "${boardObj?.title}"`,
     });
   } catch (error) {
     next(error);

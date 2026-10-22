@@ -22,10 +22,6 @@ build/
 *.swo
 .DS_Store
 
-# Prisma outputs
-prisma/*.db
-prisma/*.db-journal
-/backend/generated/
 
 # Database logs / Docker data
 mariadb_data/

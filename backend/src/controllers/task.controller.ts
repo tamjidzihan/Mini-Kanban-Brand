@@ -1,5 +1,14 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/db.js';
+import {
+  sequelize,
+  Task,
+  Column,
+  Board,
+  BoardMember,
+  User,
+  Subtask,
+  Op,
+} from '../models/index.js';
 import { createTaskSchema, moveTaskSchema, updateTaskSchema } from '../schemas/index.js';
 import { logActivity } from '../utils/activity.js';
 
@@ -8,9 +17,8 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
     const data = createTaskSchema.parse(req.body);
     const userId = req.user?.id;
 
-    const column = await prisma.column.findUnique({
-      where: { id: data.columnId },
-      select: { boardId: true },
+    const column = await Column.findByPk(data.columnId, {
+      attributes: ['boardId'],
     });
     if (!column || column.boardId !== data.boardId) {
       res.status(400).json({ message: 'Column must belong to the selected workspace' });
@@ -18,18 +26,15 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
     }
 
     if (data.assignedToId) {
-      const assignee = await prisma.boardMember.findUnique({
+      const assignee = await BoardMember.findOne({
         where: {
-          boardId_userId: {
-            boardId: data.boardId,
-            userId: data.assignedToId,
-          },
+          boardId: data.boardId,
+          userId: data.assignedToId,
         },
-        select: { status: true },
+        attributes: ['status'],
       });
-      const board = await prisma.board.findUnique({
-        where: { id: data.boardId },
-        select: { ownerId: true },
+      const board = await Board.findByPk(data.boardId, {
+        attributes: ['ownerId'],
       });
       if (board?.ownerId !== data.assignedToId && assignee?.status !== 'ACCEPTED') {
         res.status(400).json({ message: 'Assignee must be a member of this workspace' });
@@ -37,29 +42,31 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    const maxPosTask = await prisma.task.findFirst({
+    const maxPosTask = await Task.findOne({
       where: { columnId: data.columnId },
-      orderBy: { position: 'desc' },
-      select: { position: true },
+      order: [['position', 'DESC']],
+      attributes: ['position'],
     });
 
     const nextPosition = (maxPosTask?.position ?? 0) + 1000;
 
-    const task = await prisma.task.create({
-      data: {
-        title: data.title,
-        description: data.description || null,
-        columnId: data.columnId,
-        boardId: data.boardId,
-        priority: data.priority,
-        dueDate: data.dueDate ? new Date(data.dueDate) : null,
-        assignedToId: data.assignedToId || null,
-        position: nextPosition,
-      },
-      include: {
-        assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
-        subtasks: { orderBy: { position: 'asc' } },
-      },
+    const task = await Task.create({
+      title: data.title,
+      description: data.description || null,
+      columnId: data.columnId,
+      boardId: data.boardId,
+      priority: data.priority,
+      dueDate: data.dueDate ? new Date(data.dueDate) : null,
+      assignedToId: data.assignedToId || null,
+      position: nextPosition,
+    });
+
+    const fullTask = await Task.findByPk(task.id, {
+      include: [
+        { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+        { model: Subtask, as: 'subtasks' },
+      ],
+      order: [[{ model: Subtask, as: 'subtasks' }, 'position', 'ASC']],
     });
 
     if (userId) {
@@ -72,7 +79,7 @@ export const createTask = async (req: Request, res: Response, next: NextFunction
       });
     }
 
-    res.status(201).json({ task });
+    res.status(201).json({ task: fullTask });
   } catch (error) {
     next(error);
   }
@@ -84,16 +91,15 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     const data = updateTaskSchema.parse(req.body);
     const userId = req.user?.id;
 
-    const existing = await prisma.task.findUnique({ where: { id: taskId } });
+    const existing = await Task.findByPk(taskId);
     if (!existing) {
       res.status(404).json({ message: 'Task not found' });
       return;
     }
 
     if (data.columnId) {
-      const column = await prisma.column.findUnique({
-        where: { id: data.columnId },
-        select: { boardId: true },
+      const column = await Column.findByPk(data.columnId, {
+        attributes: ['boardId'],
       });
       if (!column || column.boardId !== existing.boardId) {
         res.status(400).json({ message: 'Task cannot be moved to a column in another workspace' });
@@ -102,18 +108,15 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
     }
 
     if (data.assignedToId) {
-      const assignee = await prisma.boardMember.findUnique({
+      const assignee = await BoardMember.findOne({
         where: {
-          boardId_userId: {
-            boardId: existing.boardId,
-            userId: data.assignedToId,
-          },
+          boardId: existing.boardId,
+          userId: data.assignedToId,
         },
-        select: { status: true },
+        attributes: ['status'],
       });
-      const board = await prisma.board.findUnique({
-        where: { id: existing.boardId },
-        select: { ownerId: true },
+      const board = await Board.findByPk(existing.boardId, {
+        attributes: ['ownerId'],
       });
       if (board?.ownerId !== data.assignedToId && assignee?.status !== 'ACCEPTED') {
         res.status(400).json({ message: 'Assignee must be a member of this workspace' });
@@ -121,20 +124,21 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
       }
     }
 
-    const updated = await prisma.task.update({
-      where: { id: taskId },
-      data: {
-        ...(data.title && { title: data.title }),
-        ...(data.description !== undefined && { description: data.description }),
-        ...(data.priority && { priority: data.priority }),
-        ...(data.columnId && { columnId: data.columnId }),
-        ...(data.dueDate !== undefined && { dueDate: data.dueDate ? new Date(data.dueDate) : null }),
-        ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId }),
-      },
-      include: {
-        assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
-        subtasks: { orderBy: { position: 'asc' } },
-      },
+    await existing.update({
+      ...(data.title && { title: data.title }),
+      ...(data.description !== undefined && { description: data.description }),
+      ...(data.priority && { priority: data.priority }),
+      ...(data.columnId && { columnId: data.columnId }),
+      ...(data.dueDate !== undefined && { dueDate: data.dueDate ? new Date(data.dueDate) : null }),
+      ...(data.assignedToId !== undefined && { assignedToId: data.assignedToId }),
+    });
+
+    const updated = await Task.findByPk(taskId, {
+      include: [
+        { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+        { model: Subtask, as: 'subtasks' },
+      ],
+      order: [[{ model: Subtask, as: 'subtasks' }, 'position', 'ASC']],
     });
 
     if (userId) {
@@ -163,16 +167,15 @@ export const updateTask = async (req: Request, res: Response, next: NextFunction
 export const deleteTask = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const taskId = req.params.taskId as string;
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: { id: true },
+    const task = await Task.findByPk(taskId, {
+      attributes: ['id'],
     });
     if (!task) {
       res.status(404).json({ message: 'Task not found' });
       return;
     }
 
-    await prisma.task.delete({
+    await Task.destroy({
       where: { id: taskId },
     });
 
@@ -187,19 +190,15 @@ export const moveTask = async (req: Request, res: Response, next: NextFunction):
     const taskId = req.params.taskId as string;
     const { targetColumnId, targetIndex, taskIdsOrder } = moveTaskSchema.parse(req.body);
 
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-    });
-
+    const task = await Task.findByPk(taskId);
     if (!task) {
       res.status(404).json({ message: 'Task not found' });
       return;
     }
 
     const destinationColumnId = targetColumnId || task.columnId;
-    const destinationColumn = await prisma.column.findUnique({
-      where: { id: destinationColumnId },
-      select: { boardId: true },
+    const destinationColumn = await Column.findByPk(destinationColumnId, {
+      attributes: ['boardId'],
     });
     if (!destinationColumn || destinationColumn.boardId !== task.boardId) {
       res.status(400).json({ message: 'Target column must belong to the task workspace' });
@@ -213,13 +212,13 @@ export const moveTask = async (req: Request, res: Response, next: NextFunction):
         return;
       }
 
-      const orderedTasks = await prisma.task.findMany({
-        where: { id: { in: taskIdsOrder }, boardId: task.boardId },
-        select: { id: true, columnId: true },
+      const orderedTasks = await Task.findAll({
+        where: { id: { [Op.in]: taskIdsOrder }, boardId: task.boardId },
+        attributes: ['id', 'columnId'],
       });
-      const currentDestinationTasks = await prisma.task.findMany({
-        where: { columnId: destinationColumnId, id: { not: taskId } },
-        select: { id: true },
+      const currentDestinationTasks = await Task.findAll({
+        where: { columnId: destinationColumnId, id: { [Op.ne]: taskId } },
+        attributes: ['id'],
       });
       const expectedIds = new Set([taskId, ...currentDestinationTasks.map((item) => item.id)]);
       if (
@@ -231,23 +230,25 @@ export const moveTask = async (req: Request, res: Response, next: NextFunction):
         return;
       }
 
-      await prisma.$transaction(
-        taskIdsOrder.map((id: string, index: number) =>
-          prisma.task.update({
-            where: { id },
-            data: {
+      await sequelize.transaction(async (tx) => {
+        for (let index = 0; index < taskIdsOrder.length; index++) {
+          await Task.update(
+            {
               columnId: destinationColumnId,
               position: (index + 1) * 1000,
             },
-          })
-        )
-      );
+            {
+              where: { id: taskIdsOrder[index] },
+              transaction: tx,
+            }
+          );
+        }
+      });
 
-      const updatedTask = await prisma.task.findUnique({
-        where: { id: taskId },
-        include: {
-          assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
-        },
+      const updatedTask = await Task.findByPk(taskId, {
+        include: [
+          { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+        ],
       });
 
       res.json({ task: updatedTask, message: 'Task reordered successfully' });
@@ -259,12 +260,12 @@ export const moveTask = async (req: Request, res: Response, next: NextFunction):
     const destIndex = typeof targetIndex === 'number' ? targetIndex : 0;
 
     // Get all existing tasks in destination column except the current task
-    const existingTasks = await prisma.task.findMany({
+    const existingTasks = await Task.findAll({
       where: {
         columnId: destColumnId,
-        id: { not: taskId },
+        id: { [Op.ne]: taskId },
       },
-      orderBy: { position: 'asc' },
+      order: [['position', 'ASC']],
     });
 
     // Insert task at target index
@@ -273,23 +274,25 @@ export const moveTask = async (req: Request, res: Response, next: NextFunction):
     reorderedTasks.splice(insertIdx, 0, task);
 
     // Update positions in a transaction
-    await prisma.$transaction(
-      reorderedTasks.map((t, idx) =>
-        prisma.task.update({
-          where: { id: t.id },
-          data: {
+    await sequelize.transaction(async (tx) => {
+      for (let idx = 0; idx < reorderedTasks.length; idx++) {
+        await Task.update(
+          {
             columnId: destColumnId,
             position: (idx + 1) * 1000,
           },
-        })
-      )
-    );
+          {
+            where: { id: reorderedTasks[idx].id },
+            transaction: tx,
+          }
+        );
+      }
+    });
 
-    const updatedTask = await prisma.task.findUnique({
-      where: { id: taskId },
-      include: {
-        assignedTo: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      },
+    const updatedTask = await Task.findByPk(taskId, {
+      include: [
+        { model: User, as: 'assignedTo', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+      ],
     });
 
     res.json({ task: updatedTask, message: 'Task moved successfully' });

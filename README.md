@@ -1,6 +1,6 @@
 # Taskgrid
 
-A collaborative Kanban task-management app built with React, TypeScript, Express, Prisma, and MariaDB. Create workspaces, organize tasks, and collaborate with role-based permissions.
+A collaborative Kanban task-management app built with React, TypeScript, Express, Sequelize, and MariaDB/MySQL. Create workspaces, organize tasks, and collaborate with role-based permissions.
 
 ## Features
 
@@ -22,7 +22,7 @@ A collaborative Kanban task-management app built with React, TypeScript, Express
 | Data and drag-and-drop | TanStack Query, Axios, `@dnd-kit` |
 | Markdown | `react-markdown`, `remark-gfm` |
 | Backend | Node.js, Express, TypeScript, Zod |
-| Database | MariaDB 11.4, Prisma 6.19 |
+| Database & ORM | MariaDB / MySQL, Sequelize 6, Sequelize CLI |
 | Authentication | JWT, bcryptjs |
 | Local orchestration | Docker Compose |
 
@@ -38,11 +38,13 @@ mini_kanban/
 │       ├── lib/           # API client and utilities
 │       └── pages/         # Dashboard, board, auth, and profile screens
 ├── backend/
-│   ├── prisma/            # MariaDB schema and migrations
+│   ├── config/            # Sequelize CLI database configuration
+│   ├── migrations/        # Sequelize migration files
 │   └── src/
 │       ├── config/        # Environment and database setup
 │       ├── controllers/   # API handlers
 │       ├── middlewares/   # Authentication, access control, uploads
+│       ├── models/        # Sequelize models and associations
 │       ├── routes/        # REST API routes
 │       └── schemas/       # Zod request validation
 ├── docker-compose.yml
@@ -67,6 +69,11 @@ CREATE USER 'kanban'@'localhost' IDENTIFIED BY 'replace-with-a-strong-password';
 GRANT ALL PRIVILEGES ON minikanban.* TO 'kanban'@'localhost';
 ```
 
+Or use the Sequelize CLI helper:
+```powershell
+npm --prefix backend run db:create
+```
+
 ### 2. Configure and start the backend
 
 ```powershell
@@ -74,7 +81,7 @@ cd backend
 npm install
 ```
 
-Copy `backend/.env.example` to `backend/.env` and set a unique random `JWT_SECRET` of at least 32 characters and the database user's password:
+Copy `backend/.env.example` to `backend/.env` and set a unique random `JWT_SECRET` of at least 32 characters and the database connection:
 
 ```env
 PORT=5000
@@ -83,14 +90,14 @@ JWT_SECRET="replace-with-a-long-random-secret"
 CORS_ORIGIN="http://localhost:5373"
 ```
 
-Prisma reads `DATABASE_URL` from `backend/.env` using the datasource setting in `prisma/schema.prisma`. The generated client uses Prisma 6's `engineType = "client"` with the MariaDB driver adapter, so the app-local generated client does not depend on a platform-specific query-engine binary. Generate it with `npm run prisma:generate`; `npm run build` runs generation automatically before compiling. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
+Sequelize and Sequelize CLI read `DATABASE_URL` from `backend/.env`. If the database password contains URL-reserved characters, URL-encode them in `DATABASE_URL`.
 
 `TRUST_PROXY_HOPS` defaults to `0` (no proxy headers trusted). If the backend is only reachable through one trusted reverse proxy, set it to `1` so rate limiting uses the client IP forwarded by that proxy. Set the value to the actual number of trusted proxy hops in your hosting setup; do not trust forwarded headers if clients can connect directly to the Node process.
 
-Apply the checked-in migrations and start the API:
+Apply migrations and start the API:
 
 ```powershell
-npx prisma migrate dev
+npm run db:migrate
 npm run dev
 ```
 
@@ -102,6 +109,16 @@ The public diagnostic endpoint is `GET /api/health` (also available at
 request's `Origin` matches it. It does not return credentials or raw database
 errors. A `503` response means the database is unreachable or its migrations
 have not initialized the schema.
+
+### Database Migrations with Sequelize CLI
+
+Manage database migrations easily using the CLI scripts in `backend`:
+
+- **Run pending migrations:** `npm run db:migrate` (or `npx sequelize-cli db:migrate`)
+- **Roll back last migration:** `npm run db:migrate:undo` (or `npx sequelize-cli db:migrate:undo`)
+- **Roll back all migrations:** `npm run db:migrate:undo:all` (or `npx sequelize-cli db:migrate:undo:all`)
+- **Check migration status:** `npm run db:migrate:status` (or `npx sequelize-cli db:migrate:status`)
+- **Generate new migration:** `npm run migration:generate -- --name migration-name` (or `npx sequelize-cli migration:generate --name migration-name`)
 
 ### 3. Start the frontend
 
@@ -134,7 +151,7 @@ From the repository root:
 docker compose up --build
 ```
 
-Compose starts MariaDB, applies Prisma migrations when the backend container starts, and serves the frontend and API at:
+Compose starts MariaDB, applies Sequelize migrations when the backend container starts, and serves the frontend and API at:
 
 - Frontend: `http://localhost:5173`
 - API: `http://localhost:5000`
@@ -142,83 +159,11 @@ Compose starts MariaDB, applies Prisma migrations when the backend container sta
 
 Compose provides local-development-only defaults for the database user and passwords. Override `DB_NAME`, `DB_USER`, `DB_PASSWORD`, and `DB_ROOT_PASSWORD` in the environment before starting it. Change the development JWT secret in `docker-compose.yml` before using this configuration beyond local development. Never use development defaults in production.
 
-## Database and uploaded images
-
-The Prisma schema and MariaDB migration are in `backend/prisma/`. For an already-running deployment, use `npx prisma migrate deploy` to apply pending migrations; use `npx prisma migrate dev` for local schema development.
-
-This project now targets MariaDB. Existing PostgreSQL data is not automatically copied, migrated, or deleted. Plan and verify a separate data migration before switching any deployment that contains data.
-
-Uploaded profile images are stored in `backend/uploads/` during local development and in the `avatar_uploads` Docker volume under Compose. Back up image storage as well as the database.
-
-### Deploying the backend on cPanel
-
-Build locally from the backend directory before uploading:
-
-```powershell
-cd backend
-npm ci
-npm run build
-```
-
-Upload the application files to the cPanel Node.js Application Root, including
-`dist/`, `generated/`, `prisma/`, `package.json`, and `package-lock.json`. Then
-install the production dependencies using cPanel's
-Node.js application interface and restart the app. The generated Prisma Client
-is stored in `generated/prisma/` and imported from the application, rather than
-being expected under cPanel's separate Node virtual environment. This project
-uses Prisma 6.19 so the datasource URL remains in the Prisma schema; ensure
-the cPanel application environment contains `DATABASE_URL` for runtime, and
-provide it in the shell environment when generating or applying migrations.
-
-Set `DATABASE_URL`, `JWT_SECRET`, `CORS_ORIGIN`, `TRUST_PROXY_HOPS=1`, and
-`NODE_ENV=production` in the cPanel application environment when Passenger
-forwards requests through one trusted proxy. The hop count must match the
-actual trusted proxy chain, and the Node process should not be directly
-reachable by untrusted clients.
-
-The error `The table User does not exist` means migrations have not been
-applied to the database selected by `DATABASE_URL`, or the app is connected to
-the wrong database. After verifying the cPanel `DATABASE_URL` matches the
-runtime setting, have the host run these commands from the application root:
-
-```sh
-npx prisma migrate status
-npm run prisma:deploy
-```
-
-If cPanel has no Terminal, database migration is still possible if the database
-accepts remote connections from your computer or a CI runner: run the Prisma 6
-CLI from the backend project with `DATABASE_URL` set to the cPanel database URL.
-For PowerShell, from the repository root after installing backend dependencies:
-
-```powershell
-$env:DATABASE_URL = "mysql://CPANEL_DB_USER:URL_ENCODED_PASSWORD@DB_HOST:3306/CPANEL_DB_NAME"
-npm --prefix backend run prisma:deploy
-Remove-Item Env:DATABASE_URL
-```
-
-First inspect the migrations and back up the target database. Restrict remote
-database access to your IP where possible and use a database user limited to
-the application database. If remote access is disabled, ask the provider to
-enable it temporarily or run `npx prisma migrate deploy` from the application
-root. Do not manually create the `User` table in phpMyAdmin; Prisma migration
-history must also be applied correctly. Do not add a public HTTP endpoint that
-runs migrations; it would expose a database-changing operation to the internet.
-
-Back up the database and inspect pending migrations before applying them.
-Pending migrations in this project remove the old time-tracking and
-Labels & Tags data/tables, so do not deploy them to a database containing data
-you need to preserve.
-
-The app does not ship with demo accounts or sample records. Register an account and create a workspace to get started.
-
 ## Builds
 
 ```powershell
-npm --prefix backend test
-npm --prefix frontend run build
 npm --prefix backend run build
-Push-Location backend; npx prisma validate; Pop-Location
+npm --prefix frontend run build
 ```
 
 See [ROADMAP.md](./ROADMAP.md) for proposed product and engineering improvements.

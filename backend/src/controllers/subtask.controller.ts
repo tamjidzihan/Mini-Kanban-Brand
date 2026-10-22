@@ -1,13 +1,13 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/db.js';
+import { Subtask, Task } from '../models/index.js';
 import { logActivity } from '../utils/activity.js';
 
 export const getSubtasks = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const taskId = req.params.taskId as string;
-    const subtasks = await (prisma as any).subtask.findMany({
+    const subtasks = await Subtask.findAll({
       where: { taskId },
-      orderBy: { position: 'asc' },
+      order: [['position', 'ASC']],
     });
 
     res.status(200).json({ subtasks });
@@ -27,9 +27,8 @@ export const createSubtask = async (req: Request, res: Response, next: NextFunct
       return;
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: { id: true, boardId: true, title: true },
+    const task = await Task.findByPk(taskId, {
+      attributes: ['id', 'boardId', 'title'],
     });
 
     if (!task) {
@@ -37,18 +36,16 @@ export const createSubtask = async (req: Request, res: Response, next: NextFunct
       return;
     }
 
-    const lastSubtask = await (prisma as any).subtask.findFirst({
+    const lastSubtask = await Subtask.findOne({
       where: { taskId },
-      orderBy: { position: 'desc' },
+      order: [['position', 'DESC']],
     });
     const position = lastSubtask ? lastSubtask.position + 1000 : 1000;
 
-    const subtask = await (prisma as any).subtask.create({
-      data: {
-        title: title.trim(),
-        taskId,
-        position,
-      },
+    const subtask = await Subtask.create({
+      title: title.trim(),
+      taskId,
+      position,
     });
 
     if (userId) {
@@ -78,9 +75,8 @@ export const createBulkSubtasks = async (req: Request, res: Response, next: Next
       return;
     }
 
-    const task = await prisma.task.findUnique({
-      where: { id: taskId },
-      select: { id: true, boardId: true, title: true },
+    const task = await Task.findByPk(taskId, {
+      attributes: ['id', 'boardId', 'title'],
     });
 
     if (!task) {
@@ -88,21 +84,19 @@ export const createBulkSubtasks = async (req: Request, res: Response, next: Next
       return;
     }
 
-    const lastSubtask = await (prisma as any).subtask.findFirst({
+    const lastSubtask = await Subtask.findOne({
       where: { taskId },
-      orderBy: { position: 'desc' },
+      order: [['position', 'DESC']],
     });
     let currentPos = lastSubtask ? lastSubtask.position + 1000 : 1000;
 
     const createdSubtasks = [];
     for (const title of titles) {
       if (typeof title === 'string' && title.trim()) {
-        const item = await (prisma as any).subtask.create({
-          data: {
-            title: title.trim(),
-            taskId,
-            position: currentPos,
-          },
+        const item = await Subtask.create({
+          title: title.trim(),
+          taskId,
+          position: currentPos,
         });
         createdSubtasks.push(item);
         currentPos += 1000;
@@ -131,9 +125,8 @@ export const updateSubtask = async (req: Request, res: Response, next: NextFunct
     const { title, isCompleted, position } = req.body;
     const userId = req.user?.id;
 
-    const existing = await (prisma as any).subtask.findUnique({
-      where: { id: subtaskId },
-      include: { task: true },
+    const existing = await Subtask.findByPk(subtaskId, {
+      include: [{ model: Task, as: 'task' }],
     });
 
     if (!existing) {
@@ -141,27 +134,29 @@ export const updateSubtask = async (req: Request, res: Response, next: NextFunct
       return;
     }
 
+    const taskObj = (existing as any).task;
+
     const updateData: any = {};
     if (title !== undefined) updateData.title = title.trim();
     if (isCompleted !== undefined) updateData.isCompleted = isCompleted;
     if (position !== undefined) updateData.position = position;
 
-    const updated = await (prisma as any).subtask.update({
-      where: { id: subtaskId },
-      data: updateData,
-    });
+    const prevCompleted = existing.isCompleted;
+    const prevTitle = existing.title;
 
-    if (userId && isCompleted !== undefined && isCompleted !== existing.isCompleted) {
+    await existing.update(updateData);
+
+    if (userId && isCompleted !== undefined && isCompleted !== prevCompleted && taskObj) {
       await logActivity({
         action: isCompleted ? 'SUBTASK_COMPLETED' : 'SUBTASK_UNCHECKED',
-        details: `${isCompleted ? 'Completed' : 'Unchecked'} subtask "${existing.title}"`,
+        details: `${isCompleted ? 'Completed' : 'Unchecked'} subtask "${prevTitle}"`,
         taskId: existing.taskId,
-        boardId: existing.task.boardId,
+        boardId: taskObj.boardId,
         userId,
       });
     }
 
-    res.status(200).json({ subtask: updated });
+    res.status(200).json({ subtask: existing });
   } catch (err: any) {
     next(err);
   }
@@ -171,18 +166,14 @@ export const deleteSubtask = async (req: Request, res: Response, next: NextFunct
   try {
     const subtaskId = req.params.subtaskId as string;
 
-    const existing = await (prisma as any).subtask.findUnique({
-      where: { id: subtaskId },
-    });
+    const existing = await Subtask.findByPk(subtaskId);
 
     if (!existing) {
       res.status(404).json({ message: 'Subtask not found' });
       return;
     }
 
-    await (prisma as any).subtask.delete({
-      where: { id: subtaskId },
-    });
+    await existing.destroy();
 
     res.status(200).json({ message: 'Subtask deleted successfully' });
   } catch (err: any) {

@@ -1,4 +1,5 @@
-import { Role } from '../../generated/prisma/index.js';
+import 'multer';
+import { Role } from '../models/index.js';
 
 declare global {
   namespace Express {

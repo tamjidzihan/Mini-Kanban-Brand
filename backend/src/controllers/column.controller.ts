@@ -1,31 +1,31 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/db.js';
+import { sequelize, Column, Task, Op } from '../models/index.js';
 import { createColumnSchema, updateColumnSchema, reorderColumnsSchema } from '../schemas/index.js';
 
 export const createColumn = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const data = createColumnSchema.parse(req.body);
 
-    const maxPosCol = await prisma.column.findFirst({
+    const maxPosCol = await Column.findOne({
       where: { boardId: data.boardId },
-      orderBy: { position: 'desc' },
-      select: { position: true },
+      order: [['position', 'DESC']],
+      attributes: ['position'],
     });
 
     const nextPosition = (maxPosCol?.position ?? 0) + 1000;
 
-    const column = await prisma.column.create({
-      data: {
-        title: data.title,
-        boardId: data.boardId,
-        position: nextPosition,
-      },
-      include: {
-        tasks: true,
-      },
+    const column = await Column.create({
+      title: data.title,
+      boardId: data.boardId,
+      position: nextPosition,
     });
 
-    res.status(201).json({ column });
+    res.status(201).json({
+      column: {
+        ...column.toJSON(),
+        tasks: [],
+      },
+    });
   } catch (error) {
     next(error);
   }
@@ -36,12 +36,15 @@ export const updateColumn = async (req: Request, res: Response, next: NextFuncti
     const columnId = req.params.columnId as string;
     const data = updateColumnSchema.parse(req.body);
 
-    const updated = await prisma.column.update({
-      where: { id: columnId },
-      data: { title: data.title },
-    });
+    const column = await Column.findByPk(columnId);
+    if (!column) {
+      res.status(404).json({ message: 'Column not found' });
+      return;
+    }
 
-    res.json({ column: updated });
+    await column.update({ title: data.title });
+
+    res.json({ column });
   } catch (error) {
     next(error);
   }
@@ -51,22 +54,23 @@ export const deleteColumn = async (req: Request, res: Response, next: NextFuncti
   try {
     const columnId = req.params.columnId as string;
     const targetColumnId = (req.body?.targetColumnId || req.query?.targetColumnId) as string | undefined;
-    const sourceColumn = await prisma.column.findUnique({
-      where: { id: columnId },
-      select: { boardId: true },
+
+    const sourceColumn = await Column.findByPk(columnId, {
+      attributes: ['boardId'],
     });
     if (!sourceColumn) {
       res.status(404).json({ message: 'Column not found' });
       return;
     }
+
     if (targetColumnId === columnId) {
       res.status(400).json({ message: 'Choose a different column for the tasks' });
       return;
     }
+
     if (targetColumnId) {
-      const targetColumn = await prisma.column.findUnique({
-        where: { id: targetColumnId },
-        select: { boardId: true },
+      const targetColumn = await Column.findByPk(targetColumnId, {
+        attributes: ['boardId'],
       });
       if (!targetColumn || targetColumn.boardId !== sourceColumn.boardId) {
         res.status(400).json({ message: 'Target column must belong to the same workspace' });
@@ -74,32 +78,39 @@ export const deleteColumn = async (req: Request, res: Response, next: NextFuncti
       }
     }
 
-    await prisma.$transaction(async (tx) => {
+    await sequelize.transaction(async (tx) => {
       if (targetColumnId && targetColumnId !== columnId) {
         const [sourceTasks, targetTasks] = await Promise.all([
-          tx.task.findMany({
+          Task.findAll({
             where: { columnId },
-            orderBy: { position: 'asc' },
-            select: { id: true },
+            order: [['position', 'ASC']],
+            attributes: ['id'],
+            transaction: tx,
           }),
-          tx.task.findMany({
+          Task.findAll({
             where: { columnId: targetColumnId },
-            orderBy: { position: 'asc' },
-            select: { id: true },
+            order: [['position', 'ASC']],
+            attributes: ['id'],
+            transaction: tx,
           }),
         ]);
 
-        await Promise.all(sourceTasks.map((task, index) => tx.task.update({
-          where: { id: task.id },
-          data: {
-            columnId: targetColumnId,
-            position: (targetTasks.length + index + 1) * 1000,
-          },
-        })));
+        await Promise.all(
+          sourceTasks.map((task, index) =>
+            task.update(
+              {
+                columnId: targetColumnId,
+                position: (targetTasks.length + index + 1) * 1000,
+              },
+              { transaction: tx }
+            )
+          )
+        );
       }
 
-      await tx.column.delete({
+      await Column.destroy({
         where: { id: columnId },
+        transaction: tx,
       });
     });
 
@@ -119,15 +130,16 @@ export const reorderColumns = async (req: Request, res: Response, next: NextFunc
     }
 
     const [columns, boardColumns] = await Promise.all([
-      prisma.column.findMany({
-        where: { id: { in: data.columnIds } },
-        select: { id: true, boardId: true },
+      Column.findAll({
+        where: { id: { [Op.in]: data.columnIds } },
+        attributes: ['id', 'boardId'],
       }),
-      prisma.column.findMany({
+      Column.findAll({
         where: { boardId: req.boardMember?.boardId },
-        select: { id: true },
+        attributes: ['id'],
       }),
     ]);
+
     const requestedIds = new Set(data.columnIds);
     if (
       columns.length !== data.columnIds.length ||
@@ -139,14 +151,14 @@ export const reorderColumns = async (req: Request, res: Response, next: NextFunc
       return;
     }
 
-    await prisma.$transaction(
-      data.columnIds.map((id, index) =>
-        prisma.column.update({
-          where: { id },
-          data: { position: (index + 1) * 1000 },
-        })
-      )
-    );
+    await sequelize.transaction(async (tx) => {
+      for (let index = 0; index < data.columnIds.length; index++) {
+        await Column.update(
+          { position: (index + 1) * 1000 },
+          { where: { id: data.columnIds[index] }, transaction: tx }
+        );
+      }
+    });
 
     res.json({ message: 'Columns reordered successfully' });
   } catch (error) {

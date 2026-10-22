@@ -6,6 +6,7 @@ import { ENV } from './config/env.js';
 import routes from './routes/index.js';
 import { errorHandler } from './middlewares/error.middleware.js';
 import { connectDB } from './config/db.js';
+import './models/index.js';
 
 const app = express();
 const trustProxyHops = Number(ENV.TRUST_PROXY_HOPS);

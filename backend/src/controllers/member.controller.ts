@@ -1,25 +1,25 @@
 import { Request, Response, NextFunction } from 'express';
-import { prisma } from '../config/db.js';
+import { BoardMember, Board, User } from '../models/index.js';
 import { addMemberSchema, updateMemberRoleSchema } from '../schemas/index.js';
 
 export const getMembers = async (req: Request, res: Response, next: NextFunction): Promise<void> => {
   try {
     const boardId = req.params.boardId as string;
 
-    const members = await prisma.boardMember.findMany({
+    const members = await BoardMember.findAll({
       where: { boardId, status: 'ACCEPTED' },
-      include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      },
-      orderBy: { createdAt: 'asc' },
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+      ],
+      order: [['createdAt', 'ASC']],
     });
 
-    const pendingInvitations = await prisma.boardMember.findMany({
+    const pendingInvitations = await BoardMember.findAll({
       where: { boardId, status: 'PENDING' },
-      include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      },
-      orderBy: { createdAt: 'asc' },
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+      ],
+      order: [['createdAt', 'ASC']],
     });
 
     res.json({ members, pendingInvitations });
@@ -33,7 +33,7 @@ export const addMember = async (req: Request, res: Response, next: NextFunction)
     const boardId = req.params.boardId as string;
     const data = addMemberSchema.parse(req.body);
 
-    const targetUser = await prisma.user.findUnique({
+    const targetUser = await User.findOne({
       where: { email: data.email.toLowerCase() },
     });
 
@@ -42,9 +42,8 @@ export const addMember = async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      select: { ownerId: true, title: true },
+    const board = await Board.findByPk(boardId, {
+      attributes: ['ownerId', 'title'],
     });
 
     if (board?.ownerId === targetUser.id) {
@@ -52,12 +51,10 @@ export const addMember = async (req: Request, res: Response, next: NextFunction)
       return;
     }
 
-    const existingMember = await prisma.boardMember.findUnique({
+    const existingMember = await BoardMember.findOne({
       where: {
-        boardId_userId: {
-          boardId,
-          userId: targetUser.id,
-        },
+        boardId,
+        userId: targetUser.id,
       },
     });
 
@@ -71,20 +68,21 @@ export const addMember = async (req: Request, res: Response, next: NextFunction)
       }
     }
 
-    const invitation = await prisma.boardMember.create({
-      data: {
-        boardId,
-        userId: targetUser.id,
-        role: data.role,
-        status: 'PENDING',
-      },
-      include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      },
+    const invitation = await BoardMember.create({
+      boardId,
+      userId: targetUser.id,
+      role: data.role,
+      status: 'PENDING',
+    });
+
+    const fullInvitation = await BoardMember.findByPk(invitation.id, {
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+      ],
     });
 
     res.status(201).json({
-      member: invitation,
+      member: fullInvitation,
       message: `Invitation sent successfully to ${targetUser.email}`,
     });
   } catch (error) {
@@ -98,33 +96,30 @@ export const updateMemberRole = async (req: Request, res: Response, next: NextFu
     const memberId = req.params.memberId as string;
     const data = updateMemberRoleSchema.parse(req.body);
 
-    const member = await prisma.boardMember.findUnique({
-      where: { id: memberId },
-    });
+    const member = await BoardMember.findByPk(memberId);
 
     if (!member || member.boardId !== boardId) {
       res.status(404).json({ message: 'Board member not found' });
       return;
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      select: { ownerId: true },
+    const board = await Board.findByPk(boardId, {
+      attributes: ['ownerId'],
     });
     if (board?.ownerId === member.userId) {
       res.status(400).json({ message: 'Workspace owner role is managed through ownership transfer' });
       return;
     }
 
-    const updated = await prisma.boardMember.update({
-      where: { id: memberId },
-      data: { role: data.role },
-      include: {
-        user: { select: { id: true, name: true, email: true, avatarUrl: true } },
-      },
+    await member.update({ role: data.role });
+
+    const fullMember = await BoardMember.findByPk(memberId, {
+      include: [
+        { model: User, as: 'user', attributes: ['id', 'name', 'email', 'avatarUrl'] },
+      ],
     });
 
-    res.json({ member: updated });
+    res.json({ member: fullMember });
   } catch (error) {
     next(error);
   }
@@ -135,27 +130,22 @@ export const removeMember = async (req: Request, res: Response, next: NextFuncti
     const boardId = req.params.boardId as string;
     const memberId = req.params.memberId as string;
 
-    const member = await prisma.boardMember.findUnique({
-      where: { id: memberId },
-    });
+    const member = await BoardMember.findByPk(memberId);
 
     if (!member || member.boardId !== boardId) {
       res.status(404).json({ message: 'Board member not found' });
       return;
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-      select: { ownerId: true },
+    const board = await Board.findByPk(boardId, {
+      attributes: ['ownerId'],
     });
     if (board?.ownerId === member.userId) {
       res.status(400).json({ message: 'Transfer workspace ownership before removing the owner' });
       return;
     }
 
-    await prisma.boardMember.delete({
-      where: { id: memberId },
-    });
+    await member.destroy();
 
     res.json({ message: 'Member removed from board successfully' });
   } catch (error) {
@@ -173,9 +163,7 @@ export const leaveBoard = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    const board = await prisma.board.findUnique({
-      where: { id: boardId },
-    });
+    const board = await Board.findByPk(boardId);
 
     if (!board) {
       res.status(404).json({ message: 'Workspace not found' });
@@ -189,12 +177,10 @@ export const leaveBoard = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    const member = await prisma.boardMember.findUnique({
+    const member = await BoardMember.findOne({
       where: {
-        boardId_userId: {
-          boardId,
-          userId,
-        },
+        boardId,
+        userId,
       },
     });
 
@@ -203,14 +189,7 @@ export const leaveBoard = async (req: Request, res: Response, next: NextFunction
       return;
     }
 
-    await prisma.boardMember.delete({
-      where: {
-        boardId_userId: {
-          boardId,
-          userId,
-        },
-      },
-    });
+    await member.destroy();
 
     res.json({ message: 'You have left the workspace successfully' });
   } catch (error) {

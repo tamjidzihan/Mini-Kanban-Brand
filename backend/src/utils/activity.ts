@@ -1,4 +1,4 @@
-import { prisma } from '../config/db.js';
+import { ActivityLog } from '../models/index.js';
 
 export interface LogActivityParams {
   action: string;
@@ -8,16 +8,14 @@ export interface LogActivityParams {
   userId: string;
 }
 
-export const logActivity = async (params: LogActivityParams) => {
+export const logActivity = async (params: LogActivityParams): Promise<void> => {
   try {
-    await (prisma as any).activityLog.create({
-      data: {
-        action: params.action,
-        details: params.details || null,
-        taskId: params.taskId || null,
-        boardId: params.boardId,
-        userId: params.userId,
-      },
+    await ActivityLog.create({
+      action: params.action,
+      details: params.details || null,
+      taskId: params.taskId || null,
+      boardId: params.boardId,
+      userId: params.userId,
     });
   } catch (err) {
     console.error('Failed to record activity log:', err);
