@@ -42,7 +42,7 @@ export const getBoards = async (req: Request, res: Response, next: NextFunction)
         {
           model: BoardMember,
           as: 'members',
-          where: { status: 'ACCEPTED' },
+          where: { status: 'ACCEPTED', role: ['EDITOR', 'VIEWER'] },
           required: false,
           include: [
             {
@@ -140,6 +140,8 @@ export const createBoard = async (req: Request, res: Response, next: NextFunctio
         {
           model: BoardMember,
           as: 'members',
+          where: { status: 'ACCEPTED', role: ['EDITOR', 'VIEWER'] },
+          required: false,
           include: [
             { model: User, as: 'user', attributes: ['id', 'name', 'email', 'avatarUrl'] },
           ],
@@ -169,6 +171,8 @@ export const getBoardById = async (req: Request, res: Response, next: NextFuncti
         {
           model: BoardMember,
           as: 'members',
+          where: { status: 'ACCEPTED', role: ['EDITOR', 'VIEWER'] },
+          required: false,
           include: [
             { model: User, as: 'user', attributes: ['id', 'name', 'email', 'avatarUrl'] },
           ],

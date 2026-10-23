@@ -45,6 +45,7 @@ export const BoardDetailPage: React.FC = () => {
   const [isColOpen, setIsColOpen] = useState(false);
   const [editingCol, setEditingCol] = useState<Column | null>(null);
   const [isBoardOpen, setIsBoardOpen] = useState(false);
+  const [isCreatingNewBoard, setIsCreatingNewBoard] = useState(false);
   const [isShareOpen, setIsShareOpen] = useState(false);
   const [isLeaveDialogOpen, setIsLeaveDialogOpen] = useState(false);
 
@@ -188,6 +189,15 @@ export const BoardDetailPage: React.FC = () => {
     }
   };
 
+  const handleCreateBoard = async (title: string, description?: string) => {
+    const res = await api.post('/boards', { title, description });
+    toast.success('Workspace created successfully.');
+    const newBoardId = res.data.board?.id;
+    if (newBoardId) {
+      navigate(`/board/${newBoardId}`);
+    }
+  };
+
   const handleExportBoard = () => {
     if (!board) return;
     const exportData = {
@@ -291,17 +301,25 @@ export const BoardDetailPage: React.FC = () => {
 
   if (!board) return null;
 
-  const usersInBoard = [
-    ...(board.owner ? [board.owner] : []),
-    ...(board.members || []).map((m) => m.user),
-  ];
+  const usersInBoard = (() => {
+    const seen = new Set<string>();
+    const all = [
+      ...(board.owner ? [board.owner] : []),
+      ...(board.members || []).map((m) => m.user),
+    ];
+    return all.filter((u) => {
+      if (!u || seen.has(u.id)) return false;
+      seen.add(u.id);
+      return true;
+    });
+  })();
 
   return (
     <PageLayout
       boards={allBoards}
       activeBoardId={boardId}
       onOpenCreateBoard={() => {
-        setEditingCol(null);
+        setIsCreatingNewBoard(true);
         setIsBoardOpen(true);
       }}
     >
@@ -419,12 +437,15 @@ export const BoardDetailPage: React.FC = () => {
         column={editingCol}
       />
 
-      {/* Board Edit Modal */}
+      {/* Board Create / Edit Modal */}
       <BoardModal
         isOpen={isBoardOpen}
-        onClose={() => setIsBoardOpen(false)}
-        onSubmit={handleSaveBoardDetails}
-        board={board}
+        onClose={() => {
+          setIsBoardOpen(false);
+          setIsCreatingNewBoard(false);
+        }}
+        onSubmit={isCreatingNewBoard ? handleCreateBoard : handleSaveBoardDetails}
+        board={isCreatingNewBoard ? null : board}
       />
 
       {/* Member Sharing & Access Control Modal */}
