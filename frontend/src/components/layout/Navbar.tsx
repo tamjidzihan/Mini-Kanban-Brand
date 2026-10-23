@@ -76,6 +76,18 @@ export const Navbar: React.FC<NavbarProps> = ({
           <Menu className="w-5 h-5" />
         </button>
 
+        {/* Mobile Brand Logo */}
+        <Link to="/" className="md:hidden flex items-center gap-2 group">
+          <img
+            src="/logo-icon.png"
+            alt="Taskgrid"
+            className="w-7 h-7 object-contain"
+          />
+          <span className="font-extrabold text-sm tracking-tight text-slate-900 dark:text-white">
+            Task<span className="text-emerald-500">grid</span>
+          </span>
+        </Link>
+
         {/* Desktop Sidebar Toggle */}
         <button
           type="button"

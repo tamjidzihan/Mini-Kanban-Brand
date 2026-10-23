@@ -49,19 +49,29 @@ export const Sidebar: React.FC<SidebarProps> = ({
         <Link
           to="/"
           onClick={handleLinkClick}
-          className="flex items-center gap-2.5 overflow-hidden group"
+          className="flex items-center gap-2.5 overflow-hidden group focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-emerald-500 rounded-lg p-1 -m-1"
         >
-          <div className="w-9 h-9 rounded-xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white flex items-center justify-center shrink-0 shadow-soft transition-transform group-hover:scale-105">
-            <Kanban className="w-5 h-5" />
-          </div>
-          {!isCollapsed && (
-            <div className="flex flex-col min-w-0">
-              <span className="font-bold text-sm tracking-tight text-slate-900 dark:text-slate-100 flex items-center gap-1.5 truncate">
-                Taskgrid
-              </span>
-              <span className="text-[10px] text-slate-400 dark:text-slate-500 truncate">
-                Project Workspaces
-              </span>
+          {isCollapsed ? (
+            <img
+              src="/logo-icon.png"
+              alt="Taskgrid"
+              className="w-8 h-8 object-contain shrink-0 transition-transform group-hover:scale-105"
+            />
+          ) : (
+            <div className="flex items-center gap-2.5 overflow-hidden">
+              <img
+                src="/logo-icon.png"
+                alt="Taskgrid"
+                className="w-8 h-8 object-contain shrink-0 transition-transform group-hover:scale-105"
+              />
+              <div className="flex flex-col min-w-0">
+                <span className="font-extrabold text-base tracking-tight text-slate-900 dark:text-white flex items-center leading-none">
+                  Task<span className="text-emerald-500">grid</span>
+                </span>
+                <span className="text-[10px] font-medium text-slate-400 dark:text-slate-500 truncate mt-1">
+                  Project Workspaces
+                </span>
+              </div>
             </div>
           )}
         </Link>

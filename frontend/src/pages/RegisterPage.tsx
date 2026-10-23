@@ -62,11 +62,21 @@ export const RegisterPage: React.FC = () => {
     <div className="min-h-screen flex flex-col justify-center items-center p-4 bg-gray-50 dark:bg-gray-950">
       <div className="w-full max-w-md space-y-4">
         <Card className="p-8 space-y-6 shadow-dropdown">
-          <div className="text-center space-y-2">
-            <div className="inline-flex p-3 rounded-2xl bg-gradient-to-br from-emerald-500 to-teal-600 text-white shadow-soft">
-              <Kanban className="w-7 h-7" />
+          <div className="text-center space-y-3">
+            <div className="flex items-center justify-center">
+              <img
+                src="/logo-full.png"
+                alt="Taskgrid"
+                className="h-11 w-auto object-contain dark:hidden"
+              />
+              <div className="hidden dark:flex items-center gap-2.5">
+                <img src="/logo-icon.png" alt="Taskgrid" className="w-10 h-10 object-contain" />
+                <span className="font-extrabold text-2xl tracking-tight text-white leading-none">
+                  Task<span className="text-emerald-400">grid</span>
+                </span>
+              </div>
             </div>
-            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100 flex items-center justify-center gap-1.5">
+            <h1 className="text-xl font-bold tracking-tight text-slate-900 dark:text-slate-100">
               <span>Create your Account</span>
             </h1>
             <p className="text-xs text-slate-500 dark:text-slate-400">

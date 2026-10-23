@@ -242,7 +242,7 @@ export const DashboardPage: React.FC = () => {
             </div>
           ) : filtered.length === 0 ? (
             <EmptyState
-              icon={<Kanban className="w-6 h-6 text-emerald-600" />}
+              icon={<img src="/logo-icon.png" alt="Taskgrid" className="w-10 h-10 object-contain" />}
               title={searchQuery ? 'No matching workspaces' : 'No workspaces found'}
               description={
                 searchQuery

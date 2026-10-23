@@ -307,7 +307,7 @@ export const GlobalSearch: React.FC<GlobalSearchProps> = ({ isOpen, onClose }) =
                             : 'bg-sky-100 text-sky-700 dark:bg-sky-950 dark:text-sky-400'
                         )}
                       >
-                        {item.icon ? item.icon : isBoard ? <Kanban className="w-3.5 h-3.5" /> : <CheckSquare className="w-3.5 h-3.5" />}
+                        {item.icon ? item.icon : isBoard ? <img src="/logo-icon.png" alt="" className="w-3.5 h-3.5 object-contain" /> : <CheckSquare className="w-3.5 h-3.5" />}
                       </div>
                       <div className="min-w-0">
                         <div className="text-xs font-semibold text-slate-900 dark:text-slate-100 truncate">
