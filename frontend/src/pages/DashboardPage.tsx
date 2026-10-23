@@ -60,6 +60,19 @@ export const DashboardPage: React.FC = () => {
 
   useEffect(() => {
     fetchBoards();
+
+    const handleRefresh = () => {
+      fetchBoards();
+    };
+    window.addEventListener('boards-changed', handleRefresh);
+    window.addEventListener('board-updated', handleRefresh);
+    window.addEventListener('board-deleted', handleRefresh);
+
+    return () => {
+      window.removeEventListener('boards-changed', handleRefresh);
+      window.removeEventListener('board-updated', handleRefresh);
+      window.removeEventListener('board-deleted', handleRefresh);
+    };
   }, []);
 
   const handleSaveBoard = async (title: string, description?: string) => {

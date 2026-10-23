@@ -83,6 +83,35 @@ export const BoardDetailPage: React.FC = () => {
 
   useEffect(() => {
     fetchBoardData();
+
+    const handleBoardDeleted = (e: any) => {
+      if (e.detail?.boardId === boardId) {
+        navigate('/');
+      } else {
+        fetchBoardData();
+      }
+    };
+
+    const handleBoardUpdated = (e: any) => {
+      if (e.detail?.board?.id === boardId) {
+        setBoard((prev) => (prev ? { ...prev, ...e.detail.board } : prev));
+      }
+      fetchBoardData();
+    };
+
+    const handleBoardsRefresh = () => {
+      fetchBoardData();
+    };
+
+    window.addEventListener('board-deleted', handleBoardDeleted as any);
+    window.addEventListener('board-updated', handleBoardUpdated as any);
+    window.addEventListener('boards-changed', handleBoardsRefresh);
+
+    return () => {
+      window.removeEventListener('board-deleted', handleBoardDeleted as any);
+      window.removeEventListener('board-updated', handleBoardUpdated as any);
+      window.removeEventListener('boards-changed', handleBoardsRefresh);
+    };
   }, [boardId]);
 
   useEffect(() => {

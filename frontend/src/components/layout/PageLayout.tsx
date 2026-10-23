@@ -15,6 +15,8 @@ export interface PageLayoutProps {
   boards?: Board[];
   onOpenCreateBoard?: () => void;
   activeBoardId?: string;
+  onEditBoard?: (board: Board) => void;
+  onDeleteBoard?: (boardId: string) => void;
 }
 
 export const PageLayout: React.FC<PageLayoutProps> = ({
@@ -22,6 +24,8 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
   boards = [],
   onOpenCreateBoard,
   activeBoardId,
+  onEditBoard,
+  onDeleteBoard,
 }) => {
   const [isMobileNavOpen, setIsMobileNavOpen] = useState(false);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
@@ -84,6 +88,8 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
             onOpenCreateBoard={onOpenCreateBoard}
             activeBoardId={activeBoardId}
             isCollapsed={isSidebarCollapsed}
+            onEditBoard={onEditBoard}
+            onDeleteBoard={onDeleteBoard}
           />
         </div>
 
@@ -106,6 +112,8 @@ export const PageLayout: React.FC<PageLayoutProps> = ({
                 activeBoardId={activeBoardId}
                 isCollapsed={false}
                 onCloseMobileNav={() => setIsMobileNavOpen(false)}
+                onEditBoard={onEditBoard}
+                onDeleteBoard={onDeleteBoard}
               />
             </div>
           </div>

@@ -1,17 +1,23 @@
-import React from 'react';
-import { NavLink, Link } from 'react-router-dom';
+import React, { useState, useRef, useEffect } from 'react';
+import { NavLink, Link, useNavigate } from 'react-router-dom';
 import {
   LayoutDashboard,
   Plus,
-  Kanban,
   FolderKanban,
   LogOut,
-  Sparkles,
+  MoreVertical,
+  Pencil,
+  Trash2,
 } from 'lucide-react';
 import { cn } from '../../lib/cn';
 import { Board } from '../../types';
 import { useAuth } from '../../context/AuthContext';
 import { Avatar } from '../ui/Avatar';
+import { BoardModal } from '../kanban/BoardModal';
+import { ConfirmDialog } from '../ui/ConfirmDialog';
+import { api } from '../../lib/api';
+import { useToast } from '../../context/ToastContext';
+import { useQueryClient } from '@tanstack/react-query';
 
 export interface SidebarProps {
   boards?: Board[];
@@ -19,6 +25,8 @@ export interface SidebarProps {
   activeBoardId?: string;
   isCollapsed?: boolean;
   onCloseMobileNav?: () => void;
+  onEditBoard?: (board: Board) => void;
+  onDeleteBoard?: (boardId: string) => void;
 }
 
 export const Sidebar: React.FC<SidebarProps> = ({
@@ -27,12 +35,121 @@ export const Sidebar: React.FC<SidebarProps> = ({
   activeBoardId,
   isCollapsed = false,
   onCloseMobileNav,
+  onEditBoard,
+  onDeleteBoard,
 }) => {
   const { user, logout } = useAuth();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const queryClient = useQueryClient();
+
+  const [localBoards, setLocalBoards] = useState<Board[]>(boards);
+  const [openMenuBoardId, setOpenMenuBoardId] = useState<string | null>(null);
+  const [boardToEdit, setBoardToEdit] = useState<Board | null>(null);
+  const [boardToDelete, setBoardToDelete] = useState<Board | null>(null);
+  const [isSaving, setIsSaving] = useState(false);
+  const [isDeleting, setIsDeleting] = useState(false);
+  const menuRef = useRef<HTMLDivElement>(null);
+
+  useEffect(() => {
+    setLocalBoards(boards);
+  }, [boards]);
+
+  // Click outside and escape key handling for the 3-dot dropdown menu
+  useEffect(() => {
+    if (!openMenuBoardId) return;
+
+    const handleClickOutside = (event: MouseEvent) => {
+      if (menuRef.current && !menuRef.current.contains(event.target as Node)) {
+        setOpenMenuBoardId(null);
+      }
+    };
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setOpenMenuBoardId(null);
+      }
+    };
+
+    document.addEventListener('mousedown', handleClickOutside);
+    document.addEventListener('keydown', handleKeyDown);
+
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+      document.removeEventListener('keydown', handleKeyDown);
+    };
+  }, [openMenuBoardId]);
 
   const handleLinkClick = () => {
+    setOpenMenuBoardId(null);
     if (onCloseMobileNav) {
       onCloseMobileNav();
+    }
+  };
+
+  const handleOpenEdit = (b: Board) => {
+    if (onCloseMobileNav) onCloseMobileNav();
+    if (onEditBoard) {
+      onEditBoard(b);
+    } else {
+      setBoardToEdit(b);
+    }
+  };
+
+  const handleOpenDelete = (b: Board) => {
+    if (onCloseMobileNav) onCloseMobileNav();
+    if (onDeleteBoard) {
+      onDeleteBoard(b.id);
+    } else {
+      setBoardToDelete(b);
+    }
+  };
+
+  const handleSaveEdit = async (title: string, description?: string) => {
+    if (!boardToEdit) return;
+    setIsSaving(true);
+    try {
+      const res = await api.patch(`/boards/${boardToEdit.id}`, { title, description });
+      const updatedBoard = res.data.board || { ...boardToEdit, title, description };
+
+      setLocalBoards((prev) =>
+        prev.map((item) => (item.id === boardToEdit.id ? { ...item, ...updatedBoard } : item))
+      );
+
+      toast.success('Workspace updated successfully.');
+      queryClient.invalidateQueries({ queryKey: ['boards'] });
+      window.dispatchEvent(new CustomEvent('board-updated', { detail: { board: updatedBoard } }));
+      window.dispatchEvent(new CustomEvent('boards-changed'));
+      setBoardToEdit(null);
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to update workspace.');
+    } finally {
+      setIsSaving(false);
+    }
+  };
+
+  const handleConfirmDelete = async () => {
+    if (!boardToDelete) return;
+    setIsDeleting(true);
+    try {
+      await api.delete(`/boards/${boardToDelete.id}`);
+      const deletedId = boardToDelete.id;
+
+      setLocalBoards((prev) => prev.filter((item) => item.id !== deletedId));
+
+      toast.success('Workspace deleted successfully.');
+      queryClient.invalidateQueries({ queryKey: ['boards'] });
+      window.dispatchEvent(new CustomEvent('board-deleted', { detail: { boardId: deletedId } }));
+      window.dispatchEvent(new CustomEvent('boards-changed'));
+      setBoardToDelete(null);
+
+      if (activeBoardId === deletedId) {
+        navigate('/');
+      }
+    } catch (err: any) {
+      toast.error(err.response?.data?.message || 'Failed to delete workspace.');
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -122,7 +239,7 @@ export const Sidebar: React.FC<SidebarProps> = ({
           {!isCollapsed && (
             <div className="flex items-center justify-between px-3 pb-1">
               <span className="text-[10px] font-semibold uppercase tracking-[0.08em] text-slate-400 dark:text-slate-500">
-                Workspaces ({boards.length})
+                Workspaces ({localBoards.length})
               </span>
               {onOpenCreateBoard && (
                 <button
@@ -138,35 +255,112 @@ export const Sidebar: React.FC<SidebarProps> = ({
           )}
 
           <div className="space-y-0.5">
-            {boards.length === 0 ? (
+            {localBoards.length === 0 ? (
               !isCollapsed ? (
                 <p className="px-3 py-2 text-xs text-slate-400 italic">No boards yet</p>
               ) : null
             ) : (
-              boards.map((b) => {
+              localBoards.map((b, index) => {
                 const isActive = activeBoardId === b.id;
+                const isOwner = !user?.id || b.ownerId === user?.id || b.owner?.id === user?.id;
+                const isEditor = b.members?.some(
+                  (m) => m.userId === user?.id && (m.role === 'EDITOR' || m.role === 'OWNER')
+                );
+                const canEdit = isOwner || isEditor;
+                const canDelete = isOwner;
+                const hasActions = canEdit || canDelete;
+                const isMenuOpen = openMenuBoardId === b.id;
+                const isNearBottom = index >= localBoards.length - 2 && localBoards.length > 3;
+
                 return (
-                  <NavLink
-                    key={b.id}
-                    to={`/board/${b.id}`}
-                    onClick={handleLinkClick}
-                    title={b.title}
-                    className={cn(
-                      'relative flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-all duration-150 truncate',
-                      isActive
-                        ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 font-semibold shadow-sm'
-                        : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-slate-200'
+                  <div key={b.id} className="relative group flex items-center">
+                    <NavLink
+                      to={`/board/${b.id}`}
+                      onClick={handleLinkClick}
+                      title={b.title}
+                      className={cn(
+                        'relative flex items-center gap-3 px-3 py-2 text-xs rounded-xl transition-all duration-150 truncate flex-1 min-w-0',
+                        !isCollapsed && hasActions && 'pr-8',
+                        isActive
+                          ? 'bg-emerald-50 text-emerald-700 dark:bg-emerald-500/10 dark:text-emerald-400 font-semibold shadow-sm'
+                          : 'text-slate-600 dark:text-slate-400 hover:bg-slate-100/80 dark:hover:bg-gray-800 hover:text-slate-900 dark:hover:text-slate-200'
+                      )}
+                    >
+                      {isActive && (
+                        <span
+                          className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-500 rounded-r"
+                          aria-hidden="true"
+                        />
+                      )}
+                      <FolderKanban className="w-4 h-4 shrink-0" />
+                      {!isCollapsed && <span className="truncate flex-1">{b.title}</span>}
+                    </NavLink>
+
+                    {!isCollapsed && hasActions && (
+                      <div className="absolute right-1.5 top-1/2 -translate-y-1/2 flex items-center">
+                        <button
+                          type="button"
+                          onClick={(e) => {
+                            e.preventDefault();
+                            e.stopPropagation();
+                            setOpenMenuBoardId((prev) => (prev === b.id ? null : b.id));
+                          }}
+                          aria-label={`Options for ${b.title}`}
+                          title="Board options"
+                          className={cn(
+                            'p-1 rounded-md transition-all duration-150',
+                            isMenuOpen
+                              ? 'opacity-100 bg-slate-200 dark:bg-gray-700 text-slate-800 dark:text-slate-200 shadow-sm'
+                              : 'opacity-0 group-hover:opacity-100 focus:opacity-100 text-slate-400 hover:text-slate-700 dark:hover:text-slate-200 hover:bg-slate-200/60 dark:hover:bg-gray-800/80'
+                          )}
+                        >
+                          <MoreVertical className="w-3.5 h-3.5" />
+                        </button>
+
+                        {isMenuOpen && (
+                          <div
+                            ref={menuRef}
+                            onClick={(e) => e.stopPropagation()}
+                            className={cn(
+                              'absolute right-0 w-36 bg-white dark:bg-gray-900 border border-gray-200/80 dark:border-gray-800 rounded-xl shadow-dropdown py-1 z-50 animate-in fade-in zoom-in-95',
+                              isNearBottom ? 'bottom-full mb-1' : 'top-full mt-1'
+                            )}
+                          >
+                            {canEdit && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setOpenMenuBoardId(null);
+                                  handleOpenEdit(b);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-slate-700 dark:text-slate-300 hover:bg-slate-100 dark:hover:bg-gray-800 flex items-center gap-2 transition-colors"
+                              >
+                                <Pencil className="w-3.5 h-3.5 text-slate-400" />
+                                <span>Edit</span>
+                              </button>
+                            )}
+                            {canDelete && (
+                              <button
+                                type="button"
+                                onClick={(e) => {
+                                  e.preventDefault();
+                                  e.stopPropagation();
+                                  setOpenMenuBoardId(null);
+                                  handleOpenDelete(b);
+                                }}
+                                className="w-full text-left px-3 py-1.5 text-xs text-rose-600 dark:text-rose-400 hover:bg-rose-50 dark:hover:bg-rose-500/10 flex items-center gap-2 transition-colors"
+                              >
+                                <Trash2 className="w-3.5 h-3.5" />
+                                <span>Delete</span>
+                              </button>
+                            )}
+                          </div>
+                        )}
+                      </div>
                     )}
-                  >
-                    {isActive && (
-                      <span
-                        className="absolute left-0 top-1/2 -translate-y-1/2 w-1 h-5 bg-emerald-500 rounded-r"
-                        aria-hidden="true"
-                      />
-                    )}
-                    <FolderKanban className="w-4 h-4 shrink-0" />
-                    {!isCollapsed && <span className="truncate">{b.title}</span>}
-                  </NavLink>
+                  </div>
                 );
               })
             )}
@@ -223,6 +417,27 @@ export const Sidebar: React.FC<SidebarProps> = ({
           </div>
         </div>
       )}
+
+      {/* Edit Board Modal */}
+      <BoardModal
+        isOpen={Boolean(boardToEdit)}
+        onClose={() => setBoardToEdit(null)}
+        onSubmit={handleSaveEdit}
+        board={boardToEdit}
+        isLoading={isSaving}
+      />
+
+      {/* Delete Board Confirmation Dialog */}
+      <ConfirmDialog
+        isOpen={Boolean(boardToDelete)}
+        title="Delete Workspace"
+        description={`Are you sure you want to delete "${boardToDelete?.title}"? All columns and tasks inside will be permanently deleted.`}
+        confirmLabel="Delete Workspace"
+        variant="danger"
+        isLoading={isDeleting}
+        onClose={() => setBoardToDelete(null)}
+        onConfirm={handleConfirmDelete}
+      />
     </aside>
   );
 };
